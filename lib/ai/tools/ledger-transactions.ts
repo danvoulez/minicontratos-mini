@@ -6,7 +6,7 @@ type Factory = (opts: { origin: string }) => ReturnType<typeof tool>;
 export const ledgerTransactions: Factory = ({ origin }) =>
   tool({
     description: "Record a transaction against a ledger object (and bump its version)",
-    parameters: z.object({
+    inputSchema: z.object({
       objectId: z.string().uuid(),
       operationType: z.enum(["CREATE","UPDATE","DELETE"]),
       changes: z.record(z.any()),

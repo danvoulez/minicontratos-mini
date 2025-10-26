@@ -6,7 +6,7 @@ type Factory = (opts: { origin: string }) => ReturnType<typeof tool>;
 export const ledgerObjects: Factory = ({ origin }) =>
   tool({
     description: "Query or create ledger objects",
-    parameters: z.object({
+    inputSchema: z.object({
       op: z.enum(["get","post"]),
       typeName: z.string().optional(),
       data: z.record(z.any()).optional(),

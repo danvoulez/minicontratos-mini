@@ -35,9 +35,7 @@ export async function GET(request: Request) {
     // GET success log (no filter)
     const __logTypeId = await ensureLogTypeId(db);
     await db.insert(ledgerObject).values({ typeId: __logTypeId, data: { level: 'info', message: 'ledger.objects.get', context: { count: rows.length } } });
-    const __logTypeId = await ensureLogTypeId(db);
-      await db.insert(ledgerObject).values({ typeId: __logTypeId, data: { level: 'info', message: 'ledger.objects.get', context: { typeName, count: rows.length } } });
-      return NextResponse.json(rows, { status: 200 });
+    return NextResponse.json(rows, { status: 200 });
   } catch (e:any) {
     const __logTypeId = await ensureLogTypeId(db);
     await db.insert(ledgerObject).values({ typeId: __logTypeId, data: { level: 'error', message: 'ledger.objects.get.error', context: { typeName, error: String(e?.message||e) } } });

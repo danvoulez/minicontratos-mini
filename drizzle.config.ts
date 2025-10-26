@@ -1,9 +1,13 @@
 import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
 
-config({
-  path: ".env.local",
-});
+// Load .env.local only if POSTGRES_URL is not already set (i.e., local development)
+// On Vercel, environment variables are injected directly
+if (!process.env.POSTGRES_URL) {
+  config({
+    path: ".env.local",
+  });
+}
 
 export default defineConfig({
   schema: "./lib/db/schema.ts",

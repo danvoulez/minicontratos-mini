@@ -1,9 +1,13 @@
-import { and, desc, gt, inArray, or, sql } from "drizzle-orm";
+import { and, desc, gt, inArray, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { memories, memoryAudit, type MemoryRow } from "@/lib/db/cerebro";
 import { CEREBRO_TOKEN_BUDGET_MODEL_RESERVE, CEREBRO_TOKEN_BUDGET_TOTAL } from "./env";
 import { getWorkingSetCache, setWorkingSetCache, invalidateOwnerWorkingSets } from "./cache";
+import { detectSchemaId, validateMemoryContent } from "./schema-registry";
+import { encrypt, decrypt, shouldEncrypt, type SensitivityLevel } from "./encryption";
+import type { Role } from "./rbac";
+import { canPromote } from "./rbac";
 
 function estimateTokens(obj: unknown): number {
   try {
@@ -176,9 +180,35 @@ export class MemoryManager {
     needsReview?: boolean;
     requestId?: string;
     actorId?: string;
+    sensitivity?: SensitivityLevel;
   }) {
     const { client, db } = this.db();
     try {
+      // Auto-detect schema
+      const schemaId = detectSchemaId(params.key);
+      
+      // Validate content against schema
+      const validation = validateMemoryContent(params.content, schemaId);
+      if (!validation.valid) {
+        return { 
+          id: null, 
+          updated: false, 
+          error: `Schema validation failed: ${validation.error}`,
+          needsReview: true 
+        };
+      }
+
+      // Encrypt content if needed
+      let contentToStore = params.content;
+      const sensitivity = params.sensitivity || "public";
+      
+      if (shouldEncrypt(sensitivity)) {
+        const encrypted = encrypt(params.content, sensitivity);
+        if (encrypted) {
+          contentToStore = { _encrypted: encrypted, _sensitivity: sensitivity };
+        }
+      }
+
       const existing = await db
         .select()
         .from(memories)
@@ -198,12 +228,13 @@ export class MemoryManager {
             attribute: params.attribute,
             detail: params.detail,
             tags: (params.tags as any) ?? before.tags,
-            content: params.content as any,
+            content: contentToStore as any,
             confidence: params.confidence ?? before.confidence,
             needsReview: (params.needsReview as any) ?? (before as any).needsReview ?? false,
             tokenCost,
             expiresAt: expiresAt as any,
             updatedAt: sql`now()` as any,
+            schemaId: schemaId ?? before.schemaId,
           })
           .where(sql`${memories.id} = ${before.id}`);
 
@@ -211,7 +242,7 @@ export class MemoryManager {
         await db.insert(memoryAudit).values({
           ownerId: params.ownerId,
           actorId: params.actorId ?? null,
-          action: "UPSERT",
+          action: "UPDATE",
           entityId: before.id,
           entityKey: params.key,
           scope: params.scope,
@@ -236,11 +267,12 @@ export class MemoryManager {
           attribute: params.attribute,
           detail: params.detail,
           tags: (params.tags as any) ?? [],
-          content: params.content as any,
+          content: contentToStore as any,
           tokenCost,
           confidence: params.confidence ?? 0,
           needsReview: (params.needsReview as any) ?? false,
           expiresAt: expiresAt as any,
+          schemaId: schemaId,
         })
         .returning({ id: memories.id });
 
@@ -249,7 +281,7 @@ export class MemoryManager {
       await db.insert(memoryAudit).values({
         ownerId: params.ownerId,
         actorId: params.actorId ?? null,
-        action: "UPSERT",
+        action: "CREATE",
         entityId: id,
         entityKey: params.key,
         scope: params.scope,
@@ -289,6 +321,212 @@ export class MemoryManager {
 
       await invalidateOwnerWorkingSets(params.ownerId);
       return { deleted };
+    } finally {
+      await (client as any).end({ timeout: 1 });
+    }
+  }
+
+  async promote(params: {
+    ownerId: string;
+    key: string;
+    force?: boolean;
+    merge?: boolean;
+    reason?: string;
+    requestId?: string;
+    actorId?: string;
+    actorRole?: Role;
+  }) {
+    const { client, db } = this.db();
+    try {
+      // Check permissions
+      if (params.actorRole && !canPromote(params.actorRole)) {
+        return { ok: false, error: "Insufficient permissions to promote" };
+      }
+
+      // Get the temporary memory
+      const existing = await db
+        .select()
+        .from(memories)
+        .where(
+          and(
+            sql`${memories.ownerId} = ${params.ownerId}`,
+            sql`${memories.key} = ${params.key}`,
+            sql`${memories.layer} = 'temporary'`
+          )
+        )
+        .limit(1);
+
+      if (!existing.length) {
+        return { ok: false, error: "Memory not found in temporary layer" };
+      }
+
+      const memory = existing[0];
+
+      // Check needsReview flag
+      if ((memory as any).needsReview && !params.force) {
+        return { ok: false, error: "Memory needs review, use force=true to promote anyway" };
+      }
+
+      // Check auto-promotion criteria
+      const minAccessCount = 20;
+      const minUsedInResponses = 10;
+      const minConfidence = 0.7;
+
+      if (!params.force) {
+        if (
+          (memory.accessCount ?? 0) < minAccessCount ||
+          (memory.usedInResponses ?? 0) < minUsedInResponses ||
+          (memory.confidence ?? 0) < minConfidence
+        ) {
+          return {
+            ok: false,
+            error: `Memory does not meet promotion criteria. Access: ${memory.accessCount}/${minAccessCount}, Used: ${memory.usedInResponses}/${minUsedInResponses}, Confidence: ${memory.confidence}/${minConfidence}`,
+          };
+        }
+      }
+
+      // Check if permanent memory with same key exists
+      const permanentExists = await db
+        .select()
+        .from(memories)
+        .where(
+          and(
+            sql`${memories.ownerId} = ${params.ownerId}`,
+            sql`${memories.key} = ${params.key}`,
+            sql`${memories.layer} = 'permanent'`
+          )
+        )
+        .limit(1);
+
+      if (permanentExists.length && !params.merge) {
+        return { ok: false, error: "Permanent memory already exists, use merge=true to merge" };
+      }
+
+      if (permanentExists.length && params.merge) {
+        // Merge: update existing permanent
+        await db
+          .update(memories)
+          .set({
+            content: memory.content,
+            confidence: Math.max(memory.confidence ?? 0, permanentExists[0].confidence ?? 0),
+            accessCount: (permanentExists[0].accessCount ?? 0) + (memory.accessCount ?? 0),
+            usedInResponses: (permanentExists[0].usedInResponses ?? 0) + (memory.usedInResponses ?? 0),
+            updatedAt: sql`now()` as any,
+            expiresAt: null as any, // Permanent never expires
+          })
+          .where(sql`${memories.id} = ${permanentExists[0].id}`);
+
+        // Delete temporary
+        await db.delete(memories).where(sql`${memories.id} = ${memory.id}`);
+
+        await db.insert(memoryAudit).values({
+          ownerId: params.ownerId,
+          actorId: params.actorId ?? null,
+          action: "PROMOTE_MERGE",
+          entityId: permanentExists[0].id,
+          entityKey: params.key,
+          scope: memory.scope,
+          layer: "permanent" as any,
+          before: permanentExists[0] as any,
+          after: { ...memory, layer: "permanent", reason: params.reason } as any,
+          requestId: params.requestId ?? null,
+        });
+      } else {
+        // Simple promotion: update layer
+        await db
+          .update(memories)
+          .set({
+            layer: "permanent" as any,
+            expiresAt: null as any, // Permanent never expires
+            updatedAt: sql`now()` as any,
+          })
+          .where(sql`${memories.id} = ${memory.id}`);
+
+        await db.insert(memoryAudit).values({
+          ownerId: params.ownerId,
+          actorId: params.actorId ?? null,
+          action: "PROMOTE",
+          entityId: memory.id,
+          entityKey: params.key,
+          scope: memory.scope,
+          layer: "permanent" as any,
+          before: memory as any,
+          after: { ...memory, layer: "permanent", reason: params.reason } as any,
+          requestId: params.requestId ?? null,
+        });
+      }
+
+      await invalidateOwnerWorkingSets(params.ownerId);
+      return { ok: true };
+    } finally {
+      await (client as any).end({ timeout: 1 });
+    }
+  }
+
+  async search(params: {
+    ownerId: string;
+    query?: string;
+    layer?: "context" | "temporary" | "permanent";
+    keys?: string[];
+    tags?: string[];
+    minConfidence?: number;
+    limit?: number;
+  }) {
+    const { client, db } = this.db();
+    try {
+      const whereClauses = [sql`${memories.ownerId} = ${params.ownerId}`];
+
+      if (params.layer) {
+        whereClauses.push(sql`${memories.layer} = ${params.layer}`);
+      }
+
+      if (params.keys && params.keys.length) {
+        whereClauses.push(inArray(memories.key, params.keys as any));
+      }
+
+      if (params.tags && params.tags.length) {
+        whereClauses.push(sql`${memories.tags} ?| ${params.tags}` as any);
+      }
+
+      if (params.minConfidence !== undefined) {
+        whereClauses.push(sql`${memories.confidence} >= ${params.minConfidence}`);
+      }
+
+      if (params.query) {
+        // Simple text search in key or content
+        whereClauses.push(
+          or(
+            sql`${memories.key} ILIKE ${"%" + params.query + "%"}`,
+            sql`${memories.content}::text ILIKE ${"%" + params.query + "%"}`
+          ) as any
+        );
+      }
+
+      const results = await db
+        .select()
+        .from(memories)
+        .where(and.apply(null, whereClauses as any))
+        .orderBy(desc(memories.confidence), desc(memories.updatedAt))
+        .limit(params.limit ?? 100);
+
+      return {
+        items: results.map((r) => ({
+          id: r.id,
+          scope: r.scope,
+          layer: r.layer,
+          key: r.key,
+          attribute: r.attribute,
+          detail: r.detail,
+          tags: r.tags,
+          content: r.content,
+          confidence: r.confidence,
+          usedInResponses: r.usedInResponses,
+          accessCount: r.accessCount,
+          needsReview: r.needsReview,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt,
+        })),
+      };
     } finally {
       await (client as any).end({ timeout: 1 });
     }

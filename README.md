@@ -97,3 +97,55 @@ Cada log inclui `level`, `message` e `context` (JSONB).
 - As rotas de ledger criam entradas `Log` automaticamente para sucesso/erro com `{ level, message, context }` em `data`.
 - Vantagem: tudo fica **no mesmo mecanismo** de consulta/visualização (objects), facilitando histórico e analytics.
 - Observação: a tabela `Ledger_Log` ainda existe por compatibilidade (não executamos `DROP` por política de migração segura), mas **não é mais escrita**.
+
+## CEREBRO Memory System
+
+CEREBRO is a comprehensive agent memory and knowledge management system implementing the Blueprint v1.1 specification.
+
+### Features
+
+**Memory Layers:**
+- Context (15min) - Ephemeral session data
+- Temporary (7 days) - Working memory with auto-promotion
+- Permanent (∞) - Validated long-term knowledge
+
+**Security (EP2):**
+- RBAC with roles and permissions
+- Selective AES-256-GCM encryption
+- Append-only audit trail
+
+**Quality (EP3):**
+- Schema validation with auto-detection
+- Memory promotion workflow
+- Confidence scoring and review flags
+- Semantic search
+
+**RAG (EP4):**
+- Multi-source retrieval with circuit breaker
+- Fallback mechanisms and degraded mode
+- Result caching and drift detection
+
+**Auto-Optimization (EP5):**
+- Real-time metrics collection
+- Automatic cache tuning
+- Performance monitoring and alerts
+- Guardrails with automatic rollback
+
+### API Routes
+
+- `POST /api/memory/context` - Get working set
+- `POST /api/memory/upsert` - Create/update memory
+- `POST /api/memory/promote` - Promote temporary → permanent
+- `POST /api/memory/search` - Search memories
+- `POST /api/memory/rag` - RAG retrieval
+- `GET /api/memory/metrics` - Get metrics and alerts
+
+### AI Tools
+
+CEREBRO provides AI SDK tools for LLM integration:
+```typescript
+import { cerebroTools } from "@/lib/ai/tools/cerebro";
+// Tools: memory_get_workingset, memory_upsert, memory_promote, memory_search, rag_retrieve
+```
+
+See [lib/memory/README.md](lib/memory/README.md) for full documentation.

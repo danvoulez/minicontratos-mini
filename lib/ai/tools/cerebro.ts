@@ -7,6 +7,19 @@ import { getMetricsCollector } from "@/lib/memory/metrics";
 
 const connStr = process.env.POSTGRES_URL!;
 
+interface WorkingSetItem {
+  id: string;
+  scope: string;
+  layer: "context" | "temporary" | "permanent";
+  key: string;
+  attribute?: string;
+  detail?: string;
+  tags?: string[];
+  content: unknown;
+  tokenCost: number;
+  confidence?: number;
+}
+
 export const memoryGetWorkingSetTool = tool({
   description: "Obtém contexto combinado de camadas dentro do orçamento de tokens. Use no início de cada conversa para recuperar memória relevante.",
   inputSchema: z.object({
@@ -32,9 +45,9 @@ export const memoryGetWorkingSetTool = tool({
       metrics.increment("memory_used_context_count");
       
       return {
-        context: result.items.filter((i: any) => i.layer === "context"),
-        temporary: result.items.filter((i: any) => i.layer === "temporary"),
-        permanent: result.items.filter((i: any) => i.layer === "permanent"),
+        context: result.items.filter((i: WorkingSetItem) => i.layer === "context"),
+        temporary: result.items.filter((i: WorkingSetItem) => i.layer === "temporary"),
+        permanent: result.items.filter((i: WorkingSetItem) => i.layer === "permanent"),
         ragSnippets: [],
         tokenBudget: result.budget,
       };

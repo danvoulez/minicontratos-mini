@@ -31,6 +31,7 @@ import { ledgerAggregates } from "@/lib/ai/tools/ledger-aggregates";
 
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { isProductionEnvironment } from "@/lib/constants";
+import { CEREBRO_V1, CEREBRO_TOKEN_BUDGET_TOTAL, CEREBRO_TOKEN_BUDGET_MODEL_RESERVE } from "@/lib/memory/env";
 import {
   createStreamId,
   deleteChatById,
@@ -188,12 +189,47 @@ export async function POST(request: Request) {
 
     let finalMergedUsage: AppUsage | undefined;
 
+    // Deterministic memory pre-warm (EP1)
+    let memoryWorkingSetText = "";
+    if (CEREBRO_V1) {
+      try {
+        const origin = new URL(request.url).origin;
+        const wsRes = await fetch(`${origin}/api/memory/context`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            ownerId: session.user.id,
+            maxTokens: CEREBRO_TOKEN_BUDGET_TOTAL,
+            reserveForModel: CEREBRO_TOKEN_BUDGET_MODEL_RESERVE,
+            layers: ["context", "temporary", "permanent"],
+            includeScopes: ["agent_managed", "user_owned"],
+            now: new Date().toISOString(),
+          }),
+        });
+        if (wsRes.ok) {
+          const ws = await wsRes.json();
+          const items = Array.isArray(ws?.items) ? ws.items : [];
+          // Keep memory short and structured for prompt
+          memoryWorkingSetText = `\n\n## MEMORY WORKING SET (deterministic)\n` +
+            items
+              .slice(0, 20)
+              .map((it: any) => `- [${it.layer}/${it.scope}] ${it.key}: ${JSON.stringify(it.content).slice(0, 500)}`)
+              .join("\n");
+        }
+      } catch (e) {
+        console.warn("Cerebro pre-warm failed", e);
+      }
+    }
+
     const stream = createUIMessageStream({
       execute: ({ writer: dataStream }) => {
         const origin = new URL(request.url).origin;
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }) + "\n\n" + LEDGER_SYSTEM_ADDON,
+          system:
+            systemPrompt({ selectedChatModel, requestHints }) +
+            "\n\n" + LEDGER_SYSTEM_ADDON +
+            (CEREBRO_V1 && memoryWorkingSetText ? memoryWorkingSetText : ""),
           messages: convertToModelMessages(uiMessages),
           stopWhen: stepCountIs(5),
           experimental_activeTools:

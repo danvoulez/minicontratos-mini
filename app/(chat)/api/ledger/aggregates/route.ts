@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { sql , eq } from "drizzle-orm";
 import { ledgerObject, objectType } from "@/lib/db/ledger";
+import { auth } from "@/app/(auth)/auth";
 
 
 
@@ -16,6 +17,11 @@ async function ensureLogTypeId(db: any) {
 
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const client = postgres(process.env.POSTGRES_URL!);
   const db = drizzle(client);
 

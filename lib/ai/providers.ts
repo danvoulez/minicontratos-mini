@@ -1,4 +1,5 @@
 import { gateway } from "@ai-sdk/gateway";
+import { openai } from "@ai-sdk/openai";
 import {
   customProvider,
   extractReasoningMiddleware,
@@ -30,6 +31,10 @@ export const myProvider = isTestEnvironment
           model: gateway.languageModel("xai/grok-3-mini"),
           middleware: extractReasoningMiddleware({ tagName: "think" }),
         }),
+        "openai-gpt-4o": openai("gpt-4o"),
+        "openai-gpt-4o-mini": openai("gpt-4o-mini"),
+        "openai-o1": openai("o1"),
+        "openai-o1-mini": openai("o1-mini"),
         "title-model": gateway.languageModel("xai/grok-2-1212"),
         "artifact-model": gateway.languageModel("xai/grok-2-1212"),
       },

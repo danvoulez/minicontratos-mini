@@ -18,4 +18,24 @@ export const chatModels: ChatModel[] = [
     description:
       "Uses advanced chain-of-thought reasoning for complex problems",
   },
+  {
+    id: "openai-gpt-4o",
+    name: "GPT-4o",
+    description: "OpenAI's most advanced multimodal model",
+  },
+  {
+    id: "openai-gpt-4o-mini",
+    name: "GPT-4o Mini",
+    description: "Fast and cost-effective OpenAI model",
+  },
+  {
+    id: "openai-o1",
+    name: "OpenAI o1",
+    description: "Advanced reasoning model with extended thinking",
+  },
+  {
+    id: "openai-o1-mini",
+    name: "OpenAI o1-mini",
+    description: "Efficient reasoning model for faster responses",
+  },
 ];

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq } from "drizzle-orm";
-import { ledgerObject, ledgerTransaction, ledgerLog } from "@/lib/db/ledger";
+import { ledgerObject, ledgerTransaction, objectType } from "@/lib/db/ledger";
 
 
 async function ensureLogTypeId(db: any) {

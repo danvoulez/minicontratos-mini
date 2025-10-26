@@ -8,6 +8,10 @@ import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
 import { convertToUIMessages } from "@/lib/utils";
 
+// This route uses dynamic data (auth, cookies, database queries)
+// and should not be statically generated
+export const dynamic = "force-dynamic";
+
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const { id } = params;

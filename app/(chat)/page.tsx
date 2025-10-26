@@ -6,6 +6,10 @@ import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { generateUUID } from "@/lib/utils";
 import { auth } from "../(auth)/auth";
 
+// This route uses dynamic data (auth, cookies)
+// and should not be statically generated
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const session = await auth();
 

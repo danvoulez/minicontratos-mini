@@ -1,9 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-type Factory = (opts: { origin: string }) => ReturnType<typeof tool>;
-
-export const ledgerTransactions: Factory = ({ origin }) =>
+export const ledgerTransactions = ({ origin }: { origin: string }) =>
   tool({
     description: "Record a transaction against a ledger object (and bump its version)",
     inputSchema: z.object({

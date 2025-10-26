@@ -1,9 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-type Factory = (opts: { origin: string }) => ReturnType<typeof tool>;
-
-export const ledgerObjects: Factory = ({ origin }) =>
+export const ledgerObjects = ({ origin }: { origin: string }) =>
   tool({
     description: "Query or create ledger objects",
     inputSchema: z.object({

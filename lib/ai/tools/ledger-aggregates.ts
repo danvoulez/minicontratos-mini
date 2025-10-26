@@ -1,9 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-type Factory = (opts: { origin: string }) => ReturnType<typeof tool>;
-
-export const ledgerAggregates: Factory = ({ origin }) =>
+export const ledgerAggregates = ({ origin }: { origin: string }) =>
   tool({
     description: "Get aggregate counters for the ledger (objects, transactions)",
     inputSchema: z.object({}),

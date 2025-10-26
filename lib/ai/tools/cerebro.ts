@@ -9,7 +9,7 @@ const connStr = process.env.POSTGRES_URL!;
 
 export const memoryGetWorkingSetTool = tool({
   description: "Obtém contexto combinado de camadas dentro do orçamento de tokens. Use no início de cada conversa para recuperar memória relevante.",
-  parameters: z.object({
+  inputSchema: z.object({
     sessionId: z.string().describe("ID da sessão atual"),
     keys: z.array(z.string()).optional().describe("Chaves específicas para recuperar"),
     tags: z.array(z.string()).optional().describe("Tags para filtrar memórias"),
@@ -32,9 +32,9 @@ export const memoryGetWorkingSetTool = tool({
       metrics.increment("memory_used_context_count");
       
       return {
-        context: result.items.filter(i => i.layer === "context"),
-        temporary: result.items.filter(i => i.layer === "temporary"),
-        permanent: result.items.filter(i => i.layer === "permanent"),
+        context: result.items.filter((i: any) => i.layer === "context"),
+        temporary: result.items.filter((i: any) => i.layer === "temporary"),
+        permanent: result.items.filter((i: any) => i.layer === "permanent"),
         ragSnippets: [],
         tokenBudget: result.budget,
       };
@@ -47,7 +47,7 @@ export const memoryGetWorkingSetTool = tool({
 
 export const memoryUpsertTool = tool({
   description: "Cria/atualiza memória com validação de schema e criptografia seletiva. Use para salvar informações importantes da conversa.",
-  parameters: z.object({
+  inputSchema: z.object({
     layer: z.enum(["context", "temporary", "permanent"]).describe("Camada de memória: context (efêmero), temporary (7 dias), permanent (permanente)"),
     key: z.string().describe("Chave única no formato scope:entity:id:attribute:detail"),
     value: z.any().describe("Valor a ser armazenado"),
@@ -97,7 +97,7 @@ export const memoryUpsertTool = tool({
 
 export const memoryPromoteTool = tool({
   description: "Promove memória temporary para permanent (com regras). Use quando uma informação temporária se mostrar importante e persistente.",
-  parameters: z.object({
+  inputSchema: z.object({
     key: z.string().describe("Chave da memória a promover"),
     force: z.boolean().optional().describe("Forçar promoção mesmo se needsReview=true"),
     merge: z.boolean().optional().describe("Merge com memória permanent existente"),
@@ -136,7 +136,7 @@ export const memoryPromoteTool = tool({
 
 export const memorySearchTool = tool({
   description: "Busca semântica/por chaves em memórias. Use para encontrar informações específicas no histórico.",
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe("Texto de busca"),
     layer: z.enum(["context", "temporary", "permanent"]).optional().describe("Filtrar por camada"),
     keys: z.array(z.string()).optional().describe("Filtrar por chaves específicas"),
@@ -162,7 +162,7 @@ export const memorySearchTool = tool({
 
 export const ragRetrieveTool = tool({
   description: "Recuperação de conhecimento externo com resiliência. Use quando precisar de informações além da memória interna.",
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe("Consulta para buscar conhecimento externo"),
     hints: z.record(z.any()).optional().describe("Dicas contextuais para melhorar a busca"),
   }),

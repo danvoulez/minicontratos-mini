@@ -3,9 +3,13 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
-config({
-  path: ".env.local",
-});
+// Load .env.local only if POSTGRES_URL is not already set (i.e., local development)
+// On Vercel, environment variables are injected directly
+if (!process.env.POSTGRES_URL) {
+  config({
+    path: ".env.local",
+  });
+}
 
 const runMigrate = async () => {
   if (!process.env.POSTGRES_URL) {

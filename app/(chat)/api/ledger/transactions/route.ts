@@ -18,9 +18,9 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const client = postgres(process.env.POSTGRES_URL!);
   const db = drizzle(client);
+  const { objectId, operationType, changes, createdBy } = body ?? {};
 
   try {
-    const { objectId, operationType, changes, createdBy } = body ?? {};
     if (!objectId || !operationType || !changes) {
       return NextResponse.json({ error: "bad_request", message: "objectId, operationType and changes are required" }, { status: 400 });
     }

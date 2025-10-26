@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { getRedis } from "@/lib/redis/client";
+import { getMetricsCollector } from "./metrics";
 
 // L1 cache (best-effort, per-instance)
 const L1_WS = new Map<string, { value: any; expiresAt: number }>();
@@ -24,10 +25,14 @@ export function memCacheKey(id: string) {
 }
 
 export async function getWorkingSetCache(ownerId: string, selectionParams: unknown) {
+  const metrics = getMetricsCollector();
   const key = wsCacheKey(ownerId, selectionParams);
   // L1 first
   const l1 = L1_WS.get(key);
-  if (l1 && l1.expiresAt > Date.now()) return l1.value;
+  if (l1 && l1.expiresAt > Date.now()) {
+    metrics.increment("memory_cache_l1_hit");
+    return l1.value;
+  }
 
   // L2
   const redis = await getRedis();
@@ -38,11 +43,13 @@ export async function getWorkingSetCache(ownerId: string, selectionParams: unkno
         const parsed = JSON.parse(raw);
         // Warm L1 with shorter TTL window
         L1_WS.set(key, { value: parsed, expiresAt: Date.now() + 60_000 });
+        metrics.increment("memory_cache_l2_hit");
         return parsed;
       } catch {}
     }
   }
 
+  metrics.increment("memory_cache_miss");
   return null;
 }
 

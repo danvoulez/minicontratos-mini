@@ -105,8 +105,8 @@ export class CerebroJobs {
       const report = {
         period: "monthly",
         timestamp: new Date().toISOString(),
-        memoryStats: stats.rows,
-        auditStats: auditStats.rows,
+        memoryStats: stats,
+        auditStats: auditStats,
         metrics: metrics.getReport(),
         alerts: metrics.checkAlerts(),
       };

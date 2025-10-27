@@ -15,7 +15,7 @@ export const memoryGetWorkingSetTool = tool({
     tags: z.array(z.string()).optional().describe("Tags para filtrar memórias"),
     tokenBudget: z.number().optional().describe("Orçamento de tokens disponível"),
   }),
-  execute: async ({ sessionId, keys, tags, tokenBudget }) => {
+}, async ({ sessionId, keys, tags, tokenBudget }) => {
     const mgr = new MemoryManager(connStr);
     const metrics = getMetricsCollector();
     
@@ -42,7 +42,6 @@ export const memoryGetWorkingSetTool = tool({
       metrics.recordLatency("memory_get_workingset_latency_ms", startTime, { error: "true" });
       throw error;
     }
-  },
 });
 
 export const memoryUpsertTool = tool({
@@ -56,7 +55,7 @@ export const memoryUpsertTool = tool({
     sensitivity: z.enum(["pii", "secret", "confidential", "public"]).optional().describe("Nível de sensibilidade para criptografia"),
     source: z.string().optional().describe("Fonte da informação"),
   }),
-  execute: async ({ layer, key, value, confidence, tags, sensitivity, source }) => {
+}, async ({ layer, key, value, confidence, tags, sensitivity, source }) => {
     const mgr = new MemoryManager(connStr);
     const metrics = getMetricsCollector();
     
@@ -92,7 +91,6 @@ export const memoryUpsertTool = tool({
       metrics.recordLatency("memory_upsert_latency_ms", startTime, { error: "true" });
       throw error;
     }
-  },
 });
 
 export const memoryPromoteTool = tool({
@@ -103,7 +101,7 @@ export const memoryPromoteTool = tool({
     merge: z.boolean().optional().describe("Merge com memória permanent existente"),
     reason: z.string().optional().describe("Razão para a promoção"),
   }),
-  execute: async ({ key, force, merge, reason }) => {
+}, async ({ key, force, merge, reason }) => {
     const mgr = new MemoryManager(connStr);
     const metrics = getMetricsCollector();
     
@@ -131,7 +129,6 @@ export const memoryPromoteTool = tool({
       metrics.recordLatency("memory_promote_latency_ms", startTime, { error: "true" });
       throw error;
     }
-  },
 });
 
 export const memorySearchTool = tool({
@@ -143,7 +140,7 @@ export const memorySearchTool = tool({
     tags: z.array(z.string()).optional().describe("Filtrar por tags"),
     minConfidence: z.number().min(0).max(1).optional().describe("Confiança mínima"),
   }),
-  execute: async ({ query, layer, keys, tags, minConfidence }) => {
+}, async ({ query, layer, keys, tags, minConfidence }) => {
     const mgr = new MemoryManager(connStr);
     
     const result = await mgr.search({
@@ -157,7 +154,6 @@ export const memorySearchTool = tool({
     });
     
     return { items: result.items };
-  },
 });
 
 export const ragRetrieveTool = tool({
@@ -166,7 +162,7 @@ export const ragRetrieveTool = tool({
     query: z.string().describe("Consulta para buscar conhecimento externo"),
     hints: z.record(z.any()).optional().describe("Dicas contextuais para melhorar a busca"),
   }),
-  execute: async ({ query, hints }) => {
+}, async ({ query, hints }) => {
     const ragManager = new RAGManager();
     const metrics = getMetricsCollector();
     
@@ -188,7 +184,6 @@ export const ragRetrieveTool = tool({
       metrics.recordLatency("rag_latency_ms", startTime, { error: "true" });
       throw error;
     }
-  },
 });
 
 // Export all tools as a group

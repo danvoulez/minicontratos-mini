@@ -33,9 +33,9 @@ export const memoryGetWorkingSetTool = tool({
       metrics.increment("memory_used_context_count");
       
       return {
-        context: result.items.filter(i => i.layer === "context"),
-        temporary: result.items.filter(i => i.layer === "temporary"),
-        permanent: result.items.filter(i => i.layer === "permanent"),
+        context: result.items.filter((i: any) => i.layer === "context"),
+        temporary: result.items.filter((i: any) => i.layer === "temporary"),
+        permanent: result.items.filter((i: any) => i.layer === "permanent"),
         ragSnippets: [],
         tokenBudget: result.budget,
       };

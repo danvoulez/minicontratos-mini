@@ -28,6 +28,7 @@ import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { ledgerObjects } from "@/lib/ai/tools/ledger-objects";
 import { ledgerTransactions } from "@/lib/ai/tools/ledger-transactions";
 import { ledgerAggregates } from "@/lib/ai/tools/ledger-aggregates";
+import { cerebroTools } from "@/lib/ai/tools/cerebro";
 
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { isProductionEnvironment } from "@/lib/constants";
@@ -50,13 +51,49 @@ import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
 const LEDGER_SYSTEM_ADDON = `
-Você pode operar o Ledger por ferramentas:
-- ledgerObjects { op: "get", typeName? } -> lista/filtra objetos
-- ledgerObjects { op: "post", typeName, data, metadata? } -> cria objeto
-- ledgerTransactions { objectId, operationType, changes, createdBy? } -> registra transação e atualiza objeto
-- ledgerAggregates {} -> contadores de objetos e transações
+🗄️ SISTEMA LEDGER - Registro Universal de Dados:
 
-Regras: seja objetivo; valide argumentos; nunca exponha segredos.
+Ferramentas disponíveis:
+1. ledgerObjects { op: "get", typeName? }
+   → Lista objetos existentes (se typeName vazio, lista tudo)
+
+2. ledgerObjects { op: "post", typeName, data, metadata? }
+   → CRIA novo objeto de qualquer tipo!
+   → Se o tipo não existir, será criado AUTOMATICAMENTE
+   → Exemplo: typeName="Contrato", data={ titulo: "X", valor: 1000 }
+
+3. ledgerTransactions { objectId, operationType: "UPDATE", changes, createdBy? }
+   → Atualiza objeto existente com histórico completo
+
+4. ledgerAggregates {}
+   → Mostra estatísticas (quantos tipos e objetos existem)
+
+💡 IMPORTANTE:
+- Você pode criar QUALQUER tipo de objeto na hora! (Contrato, Despesa, Nota, Log, Tarefa, etc)
+- SEMPRE use ledgerObjects para registrar dados do usuário
+- SEMPRE confirme detalhadamente o que foi criado/atualizado
+- Use nomes de tipo em português e descritivos
+
+🧠 SISTEMA CEREBRO - Memória Inteligente:
+
+Ferramentas disponíveis:
+1. memory_upsert { layer, key, value, confidence?, tags?, sensitivity? }
+   → Salva informações importantes da conversa
+   → Layers: "context" (temporário), "temporary" (7 dias), "permanent" (para sempre)
+
+2. memory_get_workingset { sessionId, keys?, tags?, tokenBudget? }
+   → Recupera memórias relevantes
+
+3. memory_search { query, layer?, keys?, tags?, minConfidence? }
+   → Busca informações específicas no histórico
+
+4. memory_promote { key, force?, merge?, reason? }
+   → Promove memória temporária para permanente
+
+5. rag_retrieve { query, hints? }
+   → Busca conhecimento externo quando necessário
+
+💡 Use o CEREBRO para lembrar preferências do usuário e contexto importante!
 `;
 
 
@@ -239,7 +276,15 @@ export async function POST(request: Request) {
                   "getWeather",
                   "createDocument",
                   "updateDocument",
-                  "requestSuggestions", "ledgerObjects", "ledgerTransactions", "ledgerAggregates",
+                  "requestSuggestions",
+                  "ledgerObjects",
+                  "ledgerTransactions",
+                  "ledgerAggregates",
+                  "memory_get_workingset",
+                  "memory_upsert",
+                  "memory_promote",
+                  "memory_search",
+                  "rag_retrieve",
                 ],
           experimental_transform: smoothStream({ chunking: "word" }),
           tools: {
@@ -253,6 +298,11 @@ export async function POST(request: Request) {
               session,
               dataStream,
             }),
+            memory_get_workingset: cerebroTools.memory_get_workingset,
+            memory_upsert: cerebroTools.memory_upsert,
+            memory_promote: cerebroTools.memory_promote,
+            memory_search: cerebroTools.memory_search,
+            rag_retrieve: cerebroTools.rag_retrieve,
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

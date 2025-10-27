@@ -3,7 +3,8 @@ import { z } from "zod";
 
 export const ledgerAggregates = ({ origin }: { origin: string }) =>
   tool({
-    description: "Get aggregate counters for the ledger (objects, transactions)",
+    description:
+      "Obter estatísticas e contadores dos registros salvos (quantos clientes, projetos, etc.). Use para mostrar um resumo ao usuário.",
     inputSchema: z.object({}),
     execute: async () => {
       const r = await fetch(`${origin}/app/(chat)/api/ledger/aggregates`);

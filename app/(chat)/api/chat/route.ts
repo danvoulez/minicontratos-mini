@@ -24,14 +24,13 @@ import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
-import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
+import { ledgerAggregates } from "@/lib/ai/tools/ledger-aggregates";
 import { ledgerObjects } from "@/lib/ai/tools/ledger-objects";
 import { ledgerTransactions } from "@/lib/ai/tools/ledger-transactions";
-import { ledgerAggregates } from "@/lib/ai/tools/ledger-aggregates";
+import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { isProductionEnvironment } from "@/lib/constants";
-import { CEREBRO_V1, CEREBRO_TOKEN_BUDGET_TOTAL, CEREBRO_TOKEN_BUDGET_MODEL_RESERVE } from "@/lib/memory/env";
 import {
   createStreamId,
   deleteChatById,
@@ -43,22 +42,16 @@ import {
   updateChatLastContextById,
 } from "@/lib/db/queries";
 import { ChatSDKError } from "@/lib/errors";
+import {
+  CEREBRO_TOKEN_BUDGET_MODEL_RESERVE,
+  CEREBRO_TOKEN_BUDGET_TOTAL,
+  CEREBRO_V1,
+} from "@/lib/memory/env";
 import type { ChatMessage } from "@/lib/types";
 import type { AppUsage } from "@/lib/usage";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
-
-const LEDGER_SYSTEM_ADDON = `
-Você pode operar o Ledger por ferramentas:
-- ledgerObjects { op: "get", typeName? } -> lista/filtra objetos
-- ledgerObjects { op: "post", typeName, data, metadata? } -> cria objeto
-- ledgerTransactions { objectId, operationType, changes, createdBy? } -> registra transação e atualiza objeto
-- ledgerAggregates {} -> contadores de objetos e transações
-
-Regras: seja objetivo; valide argumentos; nunca exponha segredos.
-`;
-
 
 export const maxDuration = 60;
 
@@ -210,10 +203,14 @@ export async function POST(request: Request) {
           const ws = await wsRes.json();
           const items = Array.isArray(ws?.items) ? ws.items : [];
           // Keep memory short and structured for prompt
-          memoryWorkingSetText = `\n\n## MEMORY WORKING SET (deterministic)\n` +
+          memoryWorkingSetText =
+            "\n\n## MEMORY WORKING SET (deterministic)\n" +
             items
               .slice(0, 20)
-              .map((it: any) => `- [${it.layer}/${it.scope}] ${it.key}: ${JSON.stringify(it.content).slice(0, 500)}`)
+              .map(
+                (it: any) =>
+                  `- [${it.layer}/${it.scope}] ${it.key}: ${JSON.stringify(it.content).slice(0, 500)}`
+              )
               .join("\n");
         }
       } catch (e) {
@@ -228,7 +225,6 @@ export async function POST(request: Request) {
           model: myProvider.languageModel(selectedChatModel),
           system:
             systemPrompt({ selectedChatModel, requestHints }) +
-            "\n\n" + LEDGER_SYSTEM_ADDON +
             (CEREBRO_V1 && memoryWorkingSetText ? memoryWorkingSetText : ""),
           messages: convertToModelMessages(uiMessages),
           stopWhen: stepCountIs(5),
@@ -239,7 +235,10 @@ export async function POST(request: Request) {
                   "getWeather",
                   "createDocument",
                   "updateDocument",
-                  "requestSuggestions", "ledgerObjects", "ledgerTransactions", "ledgerAggregates",
+                  "requestSuggestions",
+                  "ledgerObjects",
+                  "ledgerTransactions",
+                  "ledgerAggregates",
                 ],
           experimental_transform: smoothStream({ chunking: "word" }),
           tools: {

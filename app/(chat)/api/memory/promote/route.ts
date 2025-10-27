@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => ({} as any));
+  const body = await request.json().catch(() => ({}) as any);
   const { ownerId, key, force, merge, reason, requestId } = body ?? {};
 
   if (!ownerId || ownerId !== session.user.id) {
@@ -36,13 +36,16 @@ export async function POST(request: Request) {
       actorId: session.user.id,
       actorRole: "user", // Could be determined from session
     });
-    
+
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
-    
+
     return NextResponse.json(result, { status: 200 });
   } catch (e: any) {
-    return NextResponse.json({ error: "promote_failed", message: String(e?.message || e) }, { status: 500 });
+    return NextResponse.json(
+      { error: "promote_failed", message: String(e?.message || e) },
+      { status: 500 }
+    );
   }
 }

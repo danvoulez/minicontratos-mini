@@ -1,7 +1,8 @@
 // Background jobs for CEREBRO maintenance
+
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { sql } from "drizzle-orm";
 import { memories } from "@/lib/db/cerebro";
 import { getAutoTuner } from "./autotuner";
 import { getMetricsCollector } from "./metrics";
@@ -19,14 +20,18 @@ export class CerebroJobs {
     const { client, db } = this.db();
     try {
       const now = new Date();
-      
+
       const result = await db
         .delete(memories)
-        .where(sql`${memories.expiresAt} IS NOT NULL AND ${memories.expiresAt} < ${now}`)
+        .where(
+          sql`${memories.expiresAt} IS NOT NULL AND ${memories.expiresAt} < ${now}`
+        )
         .returning({ id: memories.id });
 
-      console.log(`[CerebroJobs] Expire sweep: deleted ${result.length} expired memories`);
-      
+      console.log(
+        `[CerebroJobs] Expire sweep: deleted ${result.length} expired memories`
+      );
+
       return { deleted: result.length, timestamp: now.toISOString() };
     } finally {
       await (client as any).end({ timeout: 1 });
@@ -39,9 +44,9 @@ export class CerebroJobs {
     // 1. Compare permanent memories with external sources
     // 2. Flag items that have drifted beyond threshold
     // 3. Create review tasks for drifted items
-    
+
     console.log("[CerebroJobs] Drift detection: checking for data drift");
-    
+
     return {
       checked: 0,
       drifted: 0,
@@ -53,10 +58,10 @@ export class CerebroJobs {
   async optimizerReport() {
     const autoTuner = getAutoTuner();
     const metrics = getMetricsCollector();
-    
+
     // Run auto-optimization
     const optimizationResult = autoTuner.autoOptimize();
-    
+
     // Generate report
     const report = {
       timestamp: new Date().toISOString(),
@@ -68,9 +73,12 @@ export class CerebroJobs {
         promotion: autoTuner.getPromotionConfig(),
       },
     };
-    
-    console.log("[CerebroJobs] Optimizer report generated:", JSON.stringify(report, null, 2));
-    
+
+    console.log(
+      "[CerebroJobs] Optimizer report generated:",
+      JSON.stringify(report, null, 2)
+    );
+
     return report;
   }
 
@@ -78,7 +86,7 @@ export class CerebroJobs {
     const { client, db } = this.db();
     try {
       const metrics = getMetricsCollector();
-      
+
       // Get memory statistics
       const stats = await db.execute(sql`
         SELECT 
@@ -106,13 +114,13 @@ export class CerebroJobs {
         period: "monthly",
         timestamp: new Date().toISOString(),
         memoryStats: stats,
-        auditStats: auditStats,
+        auditStats,
         metrics: metrics.getReport(),
         alerts: metrics.checkAlerts(),
       };
 
       console.log("[CerebroJobs] Monthly report generated");
-      
+
       return report;
     } finally {
       await (client as any).end({ timeout: 1 });
@@ -126,14 +134,16 @@ export class CerebroJobs {
       // 1. Export permanent memories to backup storage
       // 2. Verify backup integrity
       // 3. Clean up old backups
-      
+
       const result = await db
         .select()
         .from(memories)
         .where(sql`${memories.layer} = 'permanent'`);
 
-      console.log(`[CerebroJobs] Backup permanent: backed up ${result.length} permanent memories`);
-      
+      console.log(
+        `[CerebroJobs] Backup permanent: backed up ${result.length} permanent memories`
+      );
+
       return {
         backed_up: result.length,
         timestamp: new Date().toISOString(),
@@ -145,7 +155,7 @@ export class CerebroJobs {
 
   async runAllJobs() {
     console.log("[CerebroJobs] Running all maintenance jobs");
-    
+
     const results = {
       expireSweep: await this.expireSweep(),
       driftDetection: await this.driftDetection(),

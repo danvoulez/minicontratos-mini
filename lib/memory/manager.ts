@@ -1,13 +1,25 @@
 import { and, desc, gt, inArray, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { memories, memoryAudit, type MemoryRow } from "@/lib/db/cerebro";
-import { CEREBRO_TOKEN_BUDGET_MODEL_RESERVE, CEREBRO_TOKEN_BUDGET_TOTAL } from "./env";
-import { getWorkingSetCache, setWorkingSetCache, invalidateOwnerWorkingSets } from "./cache";
-import { detectSchemaId, validateMemoryContent } from "./schema-registry";
-import { encrypt, decrypt, shouldEncrypt, type SensitivityLevel } from "./encryption";
+import { type MemoryRow, memories, memoryAudit } from "@/lib/db/cerebro";
+import {
+  getWorkingSetCache,
+  invalidateOwnerWorkingSets,
+  setWorkingSetCache,
+} from "./cache";
+import {
+  decrypt,
+  encrypt,
+  type SensitivityLevel,
+  shouldEncrypt,
+} from "./encryption";
+import {
+  CEREBRO_TOKEN_BUDGET_MODEL_RESERVE,
+  CEREBRO_TOKEN_BUDGET_TOTAL,
+} from "./env";
 import type { Role } from "./rbac";
 import { canPromote } from "./rbac";
+import { detectSchemaId, validateMemoryContent } from "./schema-registry";
 
 function estimateTokens(obj: unknown): number {
   try {
@@ -55,7 +67,8 @@ export class MemoryManager {
     const selectionParams = {
       ownerId: req.ownerId,
       maxTokens: req.maxTokens ?? CEREBRO_TOKEN_BUDGET_TOTAL,
-      reserveForModel: req.reserveForModel ?? CEREBRO_TOKEN_BUDGET_MODEL_RESERVE,
+      reserveForModel:
+        req.reserveForModel ?? CEREBRO_TOKEN_BUDGET_MODEL_RESERVE,
       layers: req.layers ?? ["context", "temporary", "permanent"],
       includeScopes: req.includeScopes ?? ["agent_managed", "user_owned"],
       tags: req.tags ?? [],
@@ -78,7 +91,9 @@ export class MemoryManager {
       ];
 
       if (selectionParams.tags && selectionParams.tags.length) {
-        whereClauses.push(sql`${memories.tags} ?| ${selectionParams.tags}` as any);
+        whereClauses.push(
+          sql`${memories.tags} ?| ${selectionParams.tags}` as any
+        );
       }
 
       const candidates: MemoryRow[] = await db
@@ -91,7 +106,9 @@ export class MemoryManager {
       const ranked = [...candidates].sort((a, b) => {
         const lp = layerPriority(a.layer) - layerPriority(b.layer);
         if (lp !== 0) return lp * -1; // higher first
-        const nr = Number((b as any).needsReview === false) - Number((a as any).needsReview === false);
+        const nr =
+          Number((b as any).needsReview === false) -
+          Number((a as any).needsReview === false);
         if (nr !== 0) return nr;
         const conf = (b.confidence ?? 0) - (a.confidence ?? 0);
         if (conf !== 0) return conf > 0 ? 1 : -1;
@@ -99,16 +116,24 @@ export class MemoryManager {
         if (used !== 0) return used;
         const acc = (b.accessCount ?? 0) - (a.accessCount ?? 0);
         if (acc !== 0) return acc;
-        return (b.updatedAt?.getTime?.() ?? 0) - (a.updatedAt?.getTime?.() ?? 0);
+        return (
+          (b.updatedAt?.getTime?.() ?? 0) - (a.updatedAt?.getTime?.() ?? 0)
+        );
       });
 
       // Greedy fit into token budget
-      const cap = Math.max(0, selectionParams.maxTokens - selectionParams.reserveForModel);
+      const cap = Math.max(
+        0,
+        selectionParams.maxTokens - selectionParams.reserveForModel
+      );
       const items: any[] = [];
       let usedTokens = 0;
 
       for (const it of ranked) {
-        const tokenCost = it.tokenCost && it.tokenCost > 0 ? it.tokenCost : estimateTokens(it.content);
+        const tokenCost =
+          it.tokenCost && it.tokenCost > 0
+            ? it.tokenCost
+            : estimateTokens(it.content);
         if (usedTokens + tokenCost > cap) continue;
         usedTokens += tokenCost;
         items.push({
@@ -130,7 +155,10 @@ export class MemoryManager {
         const ids = items.map((x) => x.id);
         await db
           .update(memories)
-          .set({ accessCount: sql`${memories.accessCount} + 1`, updatedAt: sql`now()` })
+          .set({
+            accessCount: sql`${memories.accessCount} + 1`,
+            updatedAt: sql`now()`,
+          })
           .where(inArray(memories.id, ids as any));
       }
 
@@ -156,7 +184,8 @@ export class MemoryManager {
         scope: null,
         layer: null,
         before: null,
-        after: sql`jsonb_build_object('items', ${JSON.stringify(items.map((i: any) => i.id))})` as any,
+        after:
+          sql`jsonb_build_object('items', ${JSON.stringify(items.map((i: any) => i.id))})` as any,
         requestId: null,
       });
 
@@ -186,22 +215,22 @@ export class MemoryManager {
     try {
       // Auto-detect schema
       const schemaId = detectSchemaId(params.key);
-      
+
       // Validate content against schema
       const validation = validateMemoryContent(params.content, schemaId);
       if (!validation.valid) {
-        return { 
-          id: null, 
-          updated: false, 
+        return {
+          id: null,
+          updated: false,
           error: `Schema validation failed: ${validation.error}`,
-          needsReview: true 
+          needsReview: true,
         };
       }
 
       // Encrypt content if needed
       let contentToStore = params.content;
       const sensitivity = params.sensitivity || "public";
-      
+
       if (shouldEncrypt(sensitivity)) {
         const encrypted = encrypt(params.content, sensitivity);
         if (encrypted) {
@@ -212,10 +241,17 @@ export class MemoryManager {
       const existing = await db
         .select()
         .from(memories)
-        .where(and(sql`${memories.ownerId} = ${params.ownerId}`, sql`${memories.key} = ${params.key}`))
+        .where(
+          and(
+            sql`${memories.ownerId} = ${params.ownerId}`,
+            sql`${memories.key} = ${params.key}`
+          )
+        )
         .limit(1);
 
-      const expiresAt = params.ttlSeconds ? new Date(Date.now() + params.ttlSeconds * 1000) : null;
+      const expiresAt = params.ttlSeconds
+        ? new Date(Date.now() + params.ttlSeconds * 1000)
+        : null;
       const tokenCost = estimateTokens(params.content);
 
       if (existing.length) {
@@ -230,7 +266,10 @@ export class MemoryManager {
             tags: (params.tags as any) ?? before.tags,
             content: contentToStore as any,
             confidence: params.confidence ?? before.confidence,
-            needsReview: (params.needsReview as any) ?? (before as any).needsReview ?? false,
+            needsReview:
+              (params.needsReview as any) ??
+              (before as any).needsReview ??
+              false,
             tokenCost,
             expiresAt: expiresAt as any,
             updatedAt: sql`now()` as any,
@@ -272,7 +311,7 @@ export class MemoryManager {
           confidence: params.confidence ?? 0,
           needsReview: (params.needsReview as any) ?? false,
           expiresAt: expiresAt as any,
-          schemaId: schemaId,
+          schemaId,
         })
         .returning({ id: memories.id });
 
@@ -298,24 +337,86 @@ export class MemoryManager {
     }
   }
 
-  async deleteByIdsOrKeys(params: { ownerId: string; ids?: string[]; keys?: string[]; requestId?: string; actorId?: string }) {
+  async deleteByIdsOrKeys(params: {
+    ownerId: string;
+    ids?: string[];
+    keys?: string[];
+    requestId?: string;
+    actorId?: string;
+  }) {
     const { client, db } = this.db();
     try {
       let deleted = 0;
       if (params.ids && params.ids.length) {
-        const toDelete = await db.select().from(memories).where(and(sql`${memories.ownerId} = ${params.ownerId}`, inArray(memories.id, params.ids as any)));
-        await db.delete(memories).where(and(sql`${memories.ownerId} = ${params.ownerId}`, inArray(memories.id, params.ids as any)));
+        const toDelete = await db
+          .select()
+          .from(memories)
+          .where(
+            and(
+              sql`${memories.ownerId} = ${params.ownerId}`,
+              inArray(memories.id, params.ids as any)
+            )
+          );
+        await db
+          .delete(memories)
+          .where(
+            and(
+              sql`${memories.ownerId} = ${params.ownerId}`,
+              inArray(memories.id, params.ids as any)
+            )
+          );
         deleted += toDelete.length;
         for (const row of toDelete) {
-          await db.insert(memoryAudit).values({ ownerId: params.ownerId, actorId: params.actorId ?? null, action: "DELETE", entityId: row.id, entityKey: row.key, scope: row.scope, layer: row.layer, before: row as any, after: null, requestId: params.requestId ?? null });
+          await db
+            .insert(memoryAudit)
+            .values({
+              ownerId: params.ownerId,
+              actorId: params.actorId ?? null,
+              action: "DELETE",
+              entityId: row.id,
+              entityKey: row.key,
+              scope: row.scope,
+              layer: row.layer,
+              before: row as any,
+              after: null,
+              requestId: params.requestId ?? null,
+            });
         }
       }
       if (params.keys && params.keys.length) {
-        const toDelete = await db.select().from(memories).where(and(sql`${memories.ownerId} = ${params.ownerId}`, inArray(memories.key, params.keys as any)));
-        await db.delete(memories).where(and(sql`${memories.ownerId} = ${params.ownerId}`, inArray(memories.key, params.keys as any)));
+        const toDelete = await db
+          .select()
+          .from(memories)
+          .where(
+            and(
+              sql`${memories.ownerId} = ${params.ownerId}`,
+              inArray(memories.key, params.keys as any)
+            )
+          );
+        await db
+          .delete(memories)
+          .where(
+            and(
+              sql`${memories.ownerId} = ${params.ownerId}`,
+              inArray(memories.key, params.keys as any)
+            )
+          );
         deleted += toDelete.length;
         for (const row of toDelete) {
-          await db.insert(memoryAudit).values({ ownerId: params.ownerId, actorId: params.actorId ?? null, action: "DELETE", entityId: row.id, entityKey: row.key, scope: row.scope, layer: row.layer, before: row as any, after: null, requestId: params.requestId ?? null });
+          await db
+            .insert(memoryAudit)
+            .values({
+              ownerId: params.ownerId,
+              actorId: params.actorId ?? null,
+              action: "DELETE",
+              entityId: row.id,
+              entityKey: row.key,
+              scope: row.scope,
+              layer: row.layer,
+              before: row as any,
+              after: null,
+              requestId: params.requestId ?? null,
+            });
         }
       }
 
@@ -364,7 +465,10 @@ export class MemoryManager {
 
       // Check needsReview flag
       if ((memory as any).needsReview && !params.force) {
-        return { ok: false, error: "Memory needs review, use force=true to promote anyway" };
+        return {
+          ok: false,
+          error: "Memory needs review, use force=true to promote anyway",
+        };
       }
 
       // Check auto-promotion criteria
@@ -372,17 +476,16 @@ export class MemoryManager {
       const minUsedInResponses = 10;
       const minConfidence = 0.7;
 
-      if (!params.force) {
-        if (
-          (memory.accessCount ?? 0) < minAccessCount ||
+      if (
+        !params.force &&
+        ((memory.accessCount ?? 0) < minAccessCount ||
           (memory.usedInResponses ?? 0) < minUsedInResponses ||
-          (memory.confidence ?? 0) < minConfidence
-        ) {
-          return {
-            ok: false,
-            error: `Memory does not meet promotion criteria. Access: ${memory.accessCount}/${minAccessCount}, Used: ${memory.usedInResponses}/${minUsedInResponses}, Confidence: ${memory.confidence}/${minConfidence}`,
-          };
-        }
+          (memory.confidence ?? 0) < minConfidence)
+      ) {
+        return {
+          ok: false,
+          error: `Memory does not meet promotion criteria. Access: ${memory.accessCount}/${minAccessCount}, Used: ${memory.usedInResponses}/${minUsedInResponses}, Confidence: ${memory.confidence}/${minConfidence}`,
+        };
       }
 
       // Check if permanent memory with same key exists
@@ -399,7 +502,10 @@ export class MemoryManager {
         .limit(1);
 
       if (permanentExists.length && !params.merge) {
-        return { ok: false, error: "Permanent memory already exists, use merge=true to merge" };
+        return {
+          ok: false,
+          error: "Permanent memory already exists, use merge=true to merge",
+        };
       }
 
       if (permanentExists.length && params.merge) {
@@ -408,9 +514,15 @@ export class MemoryManager {
           .update(memories)
           .set({
             content: memory.content,
-            confidence: Math.max(memory.confidence ?? 0, permanentExists[0].confidence ?? 0),
-            accessCount: (permanentExists[0].accessCount ?? 0) + (memory.accessCount ?? 0),
-            usedInResponses: (permanentExists[0].usedInResponses ?? 0) + (memory.usedInResponses ?? 0),
+            confidence: Math.max(
+              memory.confidence ?? 0,
+              permanentExists[0].confidence ?? 0
+            ),
+            accessCount:
+              (permanentExists[0].accessCount ?? 0) + (memory.accessCount ?? 0),
+            usedInResponses:
+              (permanentExists[0].usedInResponses ?? 0) +
+              (memory.usedInResponses ?? 0),
             updatedAt: sql`now()` as any,
             expiresAt: null as any, // Permanent never expires
           })
@@ -428,7 +540,11 @@ export class MemoryManager {
           scope: memory.scope,
           layer: "permanent" as any,
           before: permanentExists[0] as any,
-          after: { ...memory, layer: "permanent", reason: params.reason } as any,
+          after: {
+            ...memory,
+            layer: "permanent",
+            reason: params.reason,
+          } as any,
           requestId: params.requestId ?? null,
         });
       } else {
@@ -451,7 +567,11 @@ export class MemoryManager {
           scope: memory.scope,
           layer: "permanent" as any,
           before: memory as any,
-          after: { ...memory, layer: "permanent", reason: params.reason } as any,
+          after: {
+            ...memory,
+            layer: "permanent",
+            reason: params.reason,
+          } as any,
           requestId: params.requestId ?? null,
         });
       }
@@ -489,7 +609,9 @@ export class MemoryManager {
       }
 
       if (params.minConfidence !== undefined) {
-        whereClauses.push(sql`${memories.confidence} >= ${params.minConfidence}`);
+        whereClauses.push(
+          sql`${memories.confidence} >= ${params.minConfidence}`
+        );
       }
 
       if (params.query) {

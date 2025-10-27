@@ -11,7 +11,7 @@ export const ledgerTransactions = ({ origin }: { origin: string }) =>
       createdBy: z.string().uuid().optional(),
     }),
     execute: async (input) => {
-      const r = await fetch(`${origin}/app/(chat)/api/ledger/transactions`, {
+      const r = await fetch(`${origin}/api/ledger/transactions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

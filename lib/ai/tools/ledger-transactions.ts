@@ -3,12 +3,21 @@ import { z } from "zod";
 
 export const ledgerTransactions = ({ origin }: { origin: string }) =>
   tool({
-    description: "Record a transaction against a ledger object (and bump its version)",
+    description:
+      "Registrar alteração em um registro existente (atualizar, criar histórico de mudanças). Use quando um registro precisa ser modificado ou você quer manter histórico das alterações.",
     inputSchema: z.object({
-      objectId: z.string().uuid(),
-      operationType: z.enum(["CREATE","UPDATE","DELETE"]),
-      changes: z.record(z.any()),
-      createdBy: z.string().uuid().optional(),
+      objectId: z.string().uuid().describe("ID do registro que foi alterado"),
+      operationType: z
+        .enum(["CREATE", "UPDATE", "DELETE"])
+        .describe(
+          "Tipo de operação: CREATE (criação), UPDATE (atualização), DELETE (exclusão)"
+        ),
+      changes: z.record(z.any()).describe("Alterações realizadas no registro"),
+      createdBy: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("ID do usuário que fez a alteração (opcional)"),
     }),
     execute: async (input) => {
       const r = await fetch(`${origin}/api/ledger/transactions`, {

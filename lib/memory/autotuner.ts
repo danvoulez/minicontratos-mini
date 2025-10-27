@@ -19,13 +19,13 @@ export interface PromotionConfig {
 
 export class AutoTuner {
   private currentCacheConfig: CacheConfig = {
-    l1MaxEntries: 10000,
+    l1MaxEntries: 10_000,
     l1TtlContext: 300,
     l1TtlTemporary: 1800,
     l1TtlPermanent: 3600,
     l2TtlContext: 600,
     l2TtlTemporary: 3600,
-    l2TtlPermanent: 86400,
+    l2TtlPermanent: 86_400,
   };
 
   private currentPromotionConfig: PromotionConfig = {
@@ -36,7 +36,11 @@ export class AutoTuner {
 
   private maxChangePercent = 50;
   private rollbackOnDegradation = true;
-  private previousConfigs: Array<{ cache: CacheConfig; promotion: PromotionConfig; timestamp: number }> = [];
+  private previousConfigs: Array<{
+    cache: CacheConfig;
+    promotion: PromotionConfig;
+    timestamp: number;
+  }> = [];
 
   getCacheConfig(): CacheConfig {
     return { ...this.currentCacheConfig };
@@ -48,7 +52,7 @@ export class AutoTuner {
 
   optimizeCacheSizing() {
     const metrics = getMetricsCollector();
-    
+
     const l1Hits = metrics.getCount("memory_cache_l1_hit");
     const l2Hits = metrics.getCount("memory_cache_l2_hit");
     const misses = metrics.getCount("memory_cache_miss");
@@ -69,7 +73,9 @@ export class AutoTuner {
     if (l1HitRate < 0.5 && l2HitRate > 0.3) {
       const increase = Math.min(
         Math.floor(this.currentCacheConfig.l1MaxEntries * 0.2),
-        Math.floor(this.currentCacheConfig.l1MaxEntries * (this.maxChangePercent / 100))
+        Math.floor(
+          this.currentCacheConfig.l1MaxEntries * (this.maxChangePercent / 100)
+        )
       );
       newConfig.l1MaxEntries += increase;
       changes.push(`Increased L1 cache size by ${increase} entries`);
@@ -80,11 +86,17 @@ export class AutoTuner {
       const ttlIncrease = 1.2;
       newConfig.l1TtlContext = Math.min(
         Math.floor(newConfig.l1TtlContext * ttlIncrease),
-        Math.floor(this.currentCacheConfig.l1TtlContext * (1 + this.maxChangePercent / 100))
+        Math.floor(
+          this.currentCacheConfig.l1TtlContext *
+            (1 + this.maxChangePercent / 100)
+        )
       );
       newConfig.l1TtlTemporary = Math.min(
         Math.floor(newConfig.l1TtlTemporary * ttlIncrease),
-        Math.floor(this.currentCacheConfig.l1TtlTemporary * (1 + this.maxChangePercent / 100))
+        Math.floor(
+          this.currentCacheConfig.l1TtlTemporary *
+            (1 + this.maxChangePercent / 100)
+        )
       );
       changes.push("Increased cache TTLs by 20%");
     }
@@ -104,7 +116,7 @@ export class AutoTuner {
 
   optimizePromotionPolicy() {
     const metrics = getMetricsCollector();
-    
+
     const promotions = metrics.getCount("memory_promote_count");
     const needsReview = metrics.getCount("memory_needs_review_count");
 
@@ -125,17 +137,16 @@ export class AutoTuner {
         Math.floor(newConfig.minUsedInResponses * 0.8),
         3
       );
-      newConfig.minConfidence = Math.max(
-        newConfig.minConfidence * 0.9,
-        0.5
-      );
+      newConfig.minConfidence = Math.max(newConfig.minConfidence * 0.9, 0.5);
       changes.push("Relaxed promotion criteria to reduce review backlog");
     }
 
     // If promotions are too frequent, tighten criteria
     if (promotions > 100 && needsReview < 10) {
       newConfig.minAccessCount = Math.floor(newConfig.minAccessCount * 1.2);
-      newConfig.minUsedInResponses = Math.floor(newConfig.minUsedInResponses * 1.2);
+      newConfig.minUsedInResponses = Math.floor(
+        newConfig.minUsedInResponses * 1.2
+      );
       newConfig.minConfidence = Math.min(newConfig.minConfidence * 1.1, 0.95);
       changes.push("Tightened promotion criteria to be more selective");
     }
@@ -155,7 +166,10 @@ export class AutoTuner {
 
   rollback() {
     if (this.previousConfigs.length === 0) {
-      return { success: false, reason: "No previous configuration to rollback to" };
+      return {
+        success: false,
+        reason: "No previous configuration to rollback to",
+      };
     }
 
     const previous = this.previousConfigs.pop()!;
@@ -167,7 +181,7 @@ export class AutoTuner {
 
   checkDegradation(): boolean {
     const metrics = getMetricsCollector();
-    
+
     const p95Latency = metrics.getP95("memory_get_workingset_latency_ms");
     const alerts = metrics.checkAlerts();
 
@@ -186,12 +200,15 @@ export class AutoTuner {
     };
 
     // Check for degradation after changes
-    if ((cacheResult.changed || promotionResult.changed) && this.rollbackOnDegradation) {
+    if (
+      (cacheResult.changed || promotionResult.changed) &&
+      this.rollbackOnDegradation
+    ) {
       setTimeout(() => {
         if (this.checkDegradation()) {
           this.rollback();
         }
-      }, 60000); // Check after 1 minute
+      }, 60_000); // Check after 1 minute
     }
 
     return results;
@@ -199,7 +216,7 @@ export class AutoTuner {
 
   getReport() {
     const metrics = getMetricsCollector();
-    
+
     return {
       currentConfig: {
         cache: this.currentCacheConfig,

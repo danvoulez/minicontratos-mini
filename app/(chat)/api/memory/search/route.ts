@@ -8,8 +8,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => ({} as any));
-  const { ownerId, query, layer, keys, tags, minConfidence, limit } = body ?? {};
+  const body = await request.json().catch(() => ({}) as any);
+  const { ownerId, query, layer, keys, tags, minConfidence, limit } =
+    body ?? {};
 
   if (!ownerId || ownerId !== session.user.id) {
     return NextResponse.json({ error: "forbidden_owner" }, { status: 403 });
@@ -33,6 +34,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(result, { status: 200 });
   } catch (e: any) {
-    return NextResponse.json({ error: "search_failed", message: String(e?.message || e) }, { status: 500 });
+    return NextResponse.json(
+      { error: "search_failed", message: String(e?.message || e) },
+      { status: 500 }
+    );
   }
 }

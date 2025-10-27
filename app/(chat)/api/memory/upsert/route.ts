@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => ({} as any));
+  const body = await request.json().catch(() => ({}) as any);
   const {
     ownerId,
     scope,
@@ -55,6 +55,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(result, { status: 200 });
   } catch (e: any) {
-    return NextResponse.json({ error: "upsert_failed", message: String(e?.message || e) }, { status: 500 });
+    return NextResponse.json(
+      { error: "upsert_failed", message: String(e?.message || e) },
+      { status: 500 }
+    );
   }
 }

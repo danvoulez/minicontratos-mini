@@ -37,7 +37,7 @@ class MetricsCollector {
   record(name: MetricName, value: number, labels?: Record<string, string>) {
     const key = this.getKey(name, labels);
     const existing = this.metrics.get(key) || [];
-    
+
     existing.push({
       name,
       value,
@@ -57,7 +57,11 @@ class MetricsCollector {
     this.record(name, 1, labels);
   }
 
-  recordLatency(name: MetricName, startTime: number, labels?: Record<string, string>) {
+  recordLatency(
+    name: MetricName,
+    startTime: number,
+    labels?: Record<string, string>
+  ) {
     const latency = Date.now() - startTime;
     this.record(name, latency, labels);
   }
@@ -75,11 +79,15 @@ class MetricsCollector {
     return this.getPercentile(name, 0.99, labels);
   }
 
-  private getPercentile(name: MetricName, percentile: number, labels?: Record<string, string>): number {
+  private getPercentile(
+    name: MetricName,
+    percentile: number,
+    labels?: Record<string, string>
+  ): number {
     const metrics = this.getMetrics(name, labels);
     if (metrics.length === 0) return 0;
 
-    const sorted = metrics.map(m => m.value).sort((a, b) => a - b);
+    const sorted = metrics.map((m) => m.value).sort((a, b) => a - b);
     const index = Math.ceil(sorted.length * percentile) - 1;
     return sorted[index] || 0;
   }
@@ -105,21 +113,21 @@ class MetricsCollector {
     if (!labels) return name;
     const sortedLabels = Object.keys(labels)
       .sort()
-      .map(k => `${k}=${labels[k]}`)
+      .map((k) => `${k}=${labels[k]}`)
       .join(",");
     return `${name}{${sortedLabels}}`;
   }
 
   getReport() {
     const report: Record<string, any> = {};
-    
+
     for (const [key, metrics] of this.metrics.entries()) {
       if (metrics.length === 0) continue;
-      
+
       const name = metrics[0].name;
-      const values = metrics.map(m => m.value);
+      const values = metrics.map((m) => m.value);
       const sum = values.reduce((a, b) => a + b, 0);
-      
+
       report[key] = {
         count: metrics.length,
         sum,
@@ -129,7 +137,7 @@ class MetricsCollector {
         recent: values.slice(-10),
       };
     }
-    
+
     return report;
   }
 
@@ -147,22 +155,26 @@ class MetricsCollector {
     const l2Hits = this.getCount("memory_cache_l2_hit");
     const misses = this.getCount("memory_cache_miss");
     const total = l1Hits + l2Hits + misses;
-    
+
     if (total > 100) {
       const l2HitRatio = l2Hits / total;
       if (l2HitRatio < 0.4) {
-        alerts.push(`Low L2 hit ratio: ${(l2HitRatio * 100).toFixed(1)}% < 40%`);
+        alerts.push(
+          `Low L2 hit ratio: ${(l2HitRatio * 100).toFixed(1)}% < 40%`
+        );
       }
     }
 
     // RAG fallback rate
     const ragTriggers = this.getCount("rag_trigger_count");
     const ragFallbacks = this.getCount("rag_fallback_count");
-    
+
     if (ragTriggers > 10) {
       const fallbackRate = ragFallbacks / ragTriggers;
       if (fallbackRate > 0.1) {
-        alerts.push(`High RAG fallback rate: ${(fallbackRate * 100).toFixed(1)}% > 10%`);
+        alerts.push(
+          `High RAG fallback rate: ${(fallbackRate * 100).toFixed(1)}% > 10%`
+        );
       }
     }
 
@@ -192,7 +204,7 @@ export async function withMetrics<T>(
 ): Promise<T> {
   const metrics = getMetricsCollector();
   const startTime = Date.now();
-  
+
   try {
     const result = await fn();
     metrics.recordLatency(name, startTime, labels);

@@ -30,7 +30,11 @@ const ContextSchema = z.object({
   value: z.any(),
 });
 
-export type SchemaId = "UserPreferenceSchema" | "ArchitectureSchema" | "PolicySchema" | "ContextSchema";
+export type SchemaId =
+  | "UserPreferenceSchema"
+  | "ArchitectureSchema"
+  | "PolicySchema"
+  | "ContextSchema";
 
 const SCHEMAS: Record<SchemaId, z.ZodSchema> = {
   UserPreferenceSchema,
@@ -56,7 +60,10 @@ export function detectSchemaId(key: string): SchemaId | null {
   return null;
 }
 
-export function validateMemoryContent(content: any, schemaId?: SchemaId | null): { valid: boolean; error?: string } {
+export function validateMemoryContent(
+  content: any,
+  schemaId?: SchemaId | null
+): { valid: boolean; error?: string } {
   if (!schemaId) {
     return { valid: true }; // No schema, no validation
   }
@@ -71,7 +78,12 @@ export function validateMemoryContent(content: any, schemaId?: SchemaId | null):
     return { valid: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { valid: false, error: error.errors.map(e => `${e.path.join(".")}: ${e.message}`).join(", ") };
+      return {
+        valid: false,
+        error: error.errors
+          .map((e) => `${e.path.join(".")}: ${e.message}`)
+          .join(", "),
+      };
     }
     return { valid: false, error: String(error) };
   }

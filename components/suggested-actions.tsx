@@ -37,7 +37,7 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
           transition={{ delay: 0.05 * index }}
         >
           <Suggestion
-            className="h-auto w-full whitespace-normal p-4 text-left hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/30 bg-gradient-to-br from-background to-muted/10 hover:from-background hover:to-muted/20"
+            className="h-auto w-full whitespace-normal border-2 bg-gradient-to-br from-background to-muted/10 p-4 text-left transition-all duration-300 hover:border-primary/30 hover:from-background hover:to-muted/20 hover:shadow-lg"
             onClick={(suggestion) => {
               window.history.replaceState({}, "", `/chat/${chatId}`);
               sendMessage({

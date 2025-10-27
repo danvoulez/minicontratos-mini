@@ -36,15 +36,35 @@
 
 ## Model Providers
 
-This template uses the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) to access multiple AI models through a unified interface. The default configuration includes [xAI](https://x.ai) models (`grok-2-vision-1212`, `grok-3-mini`) routed through the gateway.
+This template supports multiple AI models through both the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) and direct provider integrations.
 
-### AI Gateway Authentication
+### Available Models
 
-**For Vercel deployments**: Authentication is handled automatically via OIDC tokens.
+**Default Models (via AI Gateway):**
+- `grok-2-vision-1212` - Advanced multimodal model with vision and text
+- `grok-3-mini` - Fast reasoning model with extended thinking
+- `grok-2-1212` - For title generation and artifacts
 
-**For non-Vercel deployments**: You need to provide an AI Gateway API key by setting the `AI_GATEWAY_API_KEY` environment variable in your `.env.local` file.
+**OpenAI Models (Direct Integration):**
+- `gpt-4o` - OpenAI's most advanced multimodal model
+- `gpt-4o-mini` - Fast and cost-effective model
+- `o1` - Advanced reasoning model with extended thinking
+- `o1-mini` - Efficient reasoning model for faster responses
 
-With the [AI SDK](https://ai-sdk.dev/docs/introduction), you can also switch to direct LLM providers like [OpenAI](https://openai.com), [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://ai-sdk.dev/providers/ai-sdk-providers) with just a few lines of code.
+### Configuration
+
+**For Vercel deployments**: AI Gateway authentication is handled automatically via OIDC tokens.
+
+**For non-Vercel deployments**: Set `AI_GATEWAY_API_KEY` in your `.env.local` file.
+
+**To use OpenAI models**: Add your OpenAI API key to `.env.local`:
+```bash
+OPENAI_API_KEY=your_openai_api_key
+```
+
+Then select the desired OpenAI model from the model picker in the chat interface.
+
+With the [AI SDK](https://ai-sdk.dev/docs/introduction), you can also add other providers like [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://ai-sdk.dev/providers/ai-sdk-providers) with just a few lines of code in `lib/ai/providers.ts`.
 
 ## Deploy Your Own
 

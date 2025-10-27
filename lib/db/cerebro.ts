@@ -1,7 +1,23 @@
-import { pgEnum, pgTable, uuid, text, jsonb, integer, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import {
+  doublePrecision,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
-export const memoryScope = pgEnum("memory_scope", ["agent_managed", "user_owned"]);
-export const memoryLayer = pgEnum("memory_layer", ["context", "temporary", "permanent"]);
+export const memoryScope = pgEnum("memory_scope", [
+  "agent_managed",
+  "user_owned",
+]);
+export const memoryLayer = pgEnum("memory_layer", [
+  "context",
+  "temporary",
+  "permanent",
+]);
 
 export const memories = pgTable("memories", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
@@ -11,16 +27,24 @@ export const memories = pgTable("memories", {
   key: text("key").notNull(),
   attribute: text("attribute"),
   detail: text("detail"),
-  tags: jsonb("tags").$type<string[]>().default([] as any),
+  tags: jsonb("tags")
+    .$type<string[]>()
+    .default([] as any),
   content: jsonb("content").notNull(),
   tokenCost: integer("token_cost").default(0),
   confidence: doublePrecision("confidence").default(0),
   usedInResponses: integer("used_in_responses").default(0),
   accessCount: integer("access_count").default(0),
-  needsReview: integer("needs_review").$type<boolean>().default(false as any),
+  needsReview: integer("needs_review")
+    .$type<boolean>()
+    .default(false as any),
   schemaId: text("schema_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
 });
 
@@ -36,7 +60,9 @@ export const memoryAudit = pgTable("memory_audit", {
   before: jsonb("before"),
   after: jsonb("after"),
   requestId: text("request_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export type MemoryRow = typeof memories.$inferSelect;

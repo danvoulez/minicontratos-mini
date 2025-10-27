@@ -9,13 +9,14 @@ const connStr = process.env.POSTGRES_URL!;
 
 export const memoryGetWorkingSetTool = tool({
   description: "Obtém contexto combinado de camadas dentro do orçamento de tokens. Use no início de cada conversa para recuperar memória relevante.",
-  parameters: z.object({
+  inputSchema: z.object({
     sessionId: z.string().describe("ID da sessão atual"),
     keys: z.array(z.string()).optional().describe("Chaves específicas para recuperar"),
     tags: z.array(z.string()).optional().describe("Tags para filtrar memórias"),
     tokenBudget: z.number().optional().describe("Orçamento de tokens disponível"),
   }),
-  execute: async ({ sessionId, keys, tags, tokenBudget }) => {
+  execute: async (input) => {
+    const { sessionId, keys, tags, tokenBudget } = input;
     const mgr = new MemoryManager(connStr);
     const metrics = getMetricsCollector();
     
@@ -47,7 +48,7 @@ export const memoryGetWorkingSetTool = tool({
 
 export const memoryUpsertTool = tool({
   description: "Cria/atualiza memória com validação de schema e criptografia seletiva. Use para salvar informações importantes da conversa.",
-  parameters: z.object({
+  inputSchema: z.object({
     layer: z.enum(["context", "temporary", "permanent"]).describe("Camada de memória: context (efêmero), temporary (7 dias), permanent (permanente)"),
     key: z.string().describe("Chave única no formato scope:entity:id:attribute:detail"),
     value: z.any().describe("Valor a ser armazenado"),
@@ -56,7 +57,8 @@ export const memoryUpsertTool = tool({
     sensitivity: z.enum(["pii", "secret", "confidential", "public"]).optional().describe("Nível de sensibilidade para criptografia"),
     source: z.string().optional().describe("Fonte da informação"),
   }),
-}, async ({ layer, key, value, confidence, tags, sensitivity, source }) => {
+  execute: async (input) => {
+    const { layer, key, value, confidence, tags, sensitivity, source } = input;
     const mgr = new MemoryManager(connStr);
     const metrics = getMetricsCollector();
     
@@ -92,17 +94,19 @@ export const memoryUpsertTool = tool({
       metrics.recordLatency("memory_upsert_latency_ms", startTime, { error: "true" });
       throw error;
     }
+  },
 });
 
 export const memoryPromoteTool = tool({
   description: "Promove memória temporary para permanent (com regras). Use quando uma informação temporária se mostrar importante e persistente.",
-  parameters: z.object({
+  inputSchema: z.object({
     key: z.string().describe("Chave da memória a promover"),
     force: z.boolean().optional().describe("Forçar promoção mesmo se needsReview=true"),
     merge: z.boolean().optional().describe("Merge com memória permanent existente"),
     reason: z.string().optional().describe("Razão para a promoção"),
   }),
-}, async ({ key, force, merge, reason }) => {
+  execute: async (input) => {
+    const { key, force, merge, reason } = input;
     const mgr = new MemoryManager(connStr);
     const metrics = getMetricsCollector();
     
@@ -130,18 +134,20 @@ export const memoryPromoteTool = tool({
       metrics.recordLatency("memory_promote_latency_ms", startTime, { error: "true" });
       throw error;
     }
+  },
 });
 
 export const memorySearchTool = tool({
   description: "Busca semântica/por chaves em memórias. Use para encontrar informações específicas no histórico.",
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe("Texto de busca"),
     layer: z.enum(["context", "temporary", "permanent"]).optional().describe("Filtrar por camada"),
     keys: z.array(z.string()).optional().describe("Filtrar por chaves específicas"),
     tags: z.array(z.string()).optional().describe("Filtrar por tags"),
     minConfidence: z.number().min(0).max(1).optional().describe("Confiança mínima"),
   }),
-}, async ({ query, layer, keys, tags, minConfidence }) => {
+  execute: async (input) => {
+    const { query, layer, keys, tags, minConfidence } = input;
     const mgr = new MemoryManager(connStr);
     
     const result = await mgr.search({
@@ -155,15 +161,17 @@ export const memorySearchTool = tool({
     });
     
     return { items: result.items };
+  },
 });
 
 export const ragRetrieveTool = tool({
   description: "Recuperação de conhecimento externo com resiliência. Use quando precisar de informações além da memória interna.",
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe("Consulta para buscar conhecimento externo"),
     hints: z.record(z.any()).optional().describe("Dicas contextuais para melhorar a busca"),
   }),
-}, async ({ query, hints }) => {
+  execute: async (input) => {
+    const { query, hints } = input;
     const ragManager = new RAGManager();
     const metrics = getMetricsCollector();
     
@@ -185,6 +193,7 @@ export const ragRetrieveTool = tool({
       metrics.recordLatency("rag_latency_ms", startTime, { error: "true" });
       throw error;
     }
+  },
 });
 
 // Export all tools as a group

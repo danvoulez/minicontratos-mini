@@ -15,7 +15,7 @@ export const memoryGetWorkingSetTool = tool({
     tags: z.array(z.string()).optional().describe("Tags para filtrar memórias"),
     tokenBudget: z.number().optional().describe("Orçamento de tokens disponível"),
   }),
-}, async ({ sessionId, keys, tags, tokenBudget }) => {
+  execute: async ({ sessionId, keys, tags, tokenBudget }) => {
     const mgr = new MemoryManager(connStr);
     const metrics = getMetricsCollector();
     
@@ -42,6 +42,7 @@ export const memoryGetWorkingSetTool = tool({
       metrics.recordLatency("memory_get_workingset_latency_ms", startTime, { error: "true" });
       throw error;
     }
+  },
 });
 
 export const memoryUpsertTool = tool({

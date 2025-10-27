@@ -1,4 +1,4 @@
-// AI Tools for Memory System Integration (LLM Tool Contracts)
+// AI Tools for Memory System Integration (LLM Tool Contracts) - Fixed TypeScript
 import { tool } from "ai";
 import { z } from "zod";
 import { MemoryManager } from "@/lib/memory/manager";

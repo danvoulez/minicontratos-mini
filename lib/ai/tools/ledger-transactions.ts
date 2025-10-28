@@ -4,15 +4,15 @@ import { z } from "zod";
 export const ledgerTransactions = ({ origin }: { origin: string }) =>
   tool({
     description:
-      "Registrar alteração em um registro existente (atualizar, criar histórico de mudanças). Use quando um registro precisa ser modificado ou você quer manter histórico das alterações.",
+      "Atualiza um registro existente no Registro Universal, mantendo histórico completo de todas as mudanças. Use quando precisar MODIFICAR informações de algo que já está salvo (ex: mudar telefone de um cliente, atualizar valor de contrato, etc). NÃO use para criar novos registros - use ledgerObjects com op='post' para isso.",
     inputSchema: z.object({
-      objectId: z.string().uuid().describe("ID do registro que foi alterado"),
+      objectId: z.string().uuid().describe("ID único do registro que será atualizado (você recebe este ID quando consulta ou cria um registro)"),
       operationType: z
         .enum(["CREATE", "UPDATE", "DELETE"])
         .describe(
-          "Tipo de operação: CREATE (criação), UPDATE (atualização), DELETE (exclusão)"
+          "Tipo de operação: 'UPDATE' (atualizar campos), 'CREATE' (registrar criação no histórico), 'DELETE' (marcar como deletado)"
         ),
-      changes: z.record(z.any()).describe("Alterações realizadas no registro"),
+      changes: z.record(z.any()).describe("Novos valores dos campos que estão sendo alterados. Ex: { telefone: '11-99999-9999', email: 'novo@email.com' }"),
       createdBy: z
         .string()
         .uuid()

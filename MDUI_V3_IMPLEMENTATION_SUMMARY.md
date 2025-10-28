@@ -9,17 +9,17 @@ This document summarizes the changes made to implement the MD-UI System Prompt v
 ### 1. System Prompt Enhancement (`lib/ai/prompts.ts`)
 
 **Key Updates:**
-- **Personality Section** - Simplified and strengthened to match issue requirements:
+- **Personality Section** - simplified and strengthened to match issue requirements:
   - "Humano, calmo, direto e gentil"
   - "Sem jargão técnico"
   - 0-2 emojis per response
   
-- **Tool Usage Section** - Enhanced with explicit guidance:
+- **Tool Usage Section** - enhanced with explicit guidance:
   - Lists available tools (ledgerObjects, memoryWorkingSet, automations, notifications, MD-UI)
   - Emphasizes "NUNCA mencione nomes de ferramentas"
   - Provides examples of natural vs technical language
   
-- **Canonical Example** - Added "Entrega — Maria" as the first and primary example:
+- **Canonical Example** - added "Entrega — Maria" as the first and primary example:
   ```markdown
   :::card title="Entrega — Maria" icon="📦" status="pending"
   | Campo | Valor | Ação |
@@ -37,7 +37,7 @@ This document summarizes the changes made to implement the MD-UI System Prompt v
   :::
   ```
 
-- **Format Instruction** - Added mandatory formatting section:
+- **Format Instruction** - added mandatory formatting section:
   - "FORMATO DE RESPOSTA OBRIGATÓRIO"
   - "TODAS as respostas devem usar Markdown UI (MD-UI)"
   - "NUNCA responda apenas com texto plano"

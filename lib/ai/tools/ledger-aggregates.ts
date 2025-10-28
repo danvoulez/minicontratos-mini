@@ -4,7 +4,7 @@ import { z } from "zod";
 export const ledgerAggregates = ({ origin }: { origin: string }) =>
   tool({
     description:
-      "Obter estatísticas e contadores dos registros salvos (quantos clientes, projetos, etc.). Use para mostrar um resumo ao usuário.",
+      "Mostra estatísticas e resumo do Registro Universal (quantos registros de cada tipo existem). Use quando o usuário perguntar 'o que tenho salvo?', 'quantos clientes tenho?', 'me mostra um resumo', etc. Retorna uma visão geral de tudo que está registrado no sistema.",
     inputSchema: z.object({}),
     execute: async () => {
       const r = await fetch(`${origin}/api/ledger/aggregates`);

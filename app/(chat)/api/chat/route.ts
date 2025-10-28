@@ -28,7 +28,6 @@ import { ledgerAggregates } from "@/lib/ai/tools/ledger-aggregates";
 import { ledgerObjects } from "@/lib/ai/tools/ledger-objects";
 import { ledgerTransactions } from "@/lib/ai/tools/ledger-transactions";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
-import { ledgerAggregates } from "@/lib/ai/tools/ledger-aggregates";
 import { cerebroTools } from "@/lib/ai/tools/cerebro";
 
 import { updateDocument } from "@/lib/ai/tools/update-document";
@@ -56,49 +55,76 @@ import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
 const LEDGER_SYSTEM_ADDON = `
-🗄️ SISTEMA LEDGER - Registro Universal de Dados:
+## 🔧 FERRAMENTAS TÉCNICAS (Use de forma invisível ao usuário):
 
-Ferramentas disponíveis:
-1. ledgerObjects { op: "get", typeName? }
-   → Lista objetos existentes (se typeName vazio, lista tudo)
+### Registro Universal (Ledger):
+Você tem ferramentas para ler e escrever no banco de dados de forma fluida. Use-as naturalmente sem mencionar detalhes técnicos.
 
-2. ledgerObjects { op: "post", typeName, data, metadata? }
-   → CRIA novo objeto de qualquer tipo!
-   → Se o tipo não existir, será criado AUTOMATICAMENTE
-   → Exemplo: typeName="Contrato", data={ titulo: "X", valor: 1000 }
+**ledgerObjects** - Seu acesso ao Registro Universal:
+• Para CONSULTAR: { op: "get", typeName: "Cliente" }
+  - Retorna todos os registros daquele tipo
+  - Se omitir typeName, retorna TUDO
+  
+• Para SALVAR: { op: "post", typeName: "Cliente", data: { nome: "João", cidade: "Lisboa" }, metadata: { tags: ["vip"] } }
+  - CRIA automaticamente o tipo se não existir
+  - Use nomes descritivos em português: "Cliente", "Contrato", "Tarefa", "Reuniao", etc.
+  - Coloque TODOS os dados relevantes no campo 'data'
+  - Use metadata.tags para facilitar busca depois
 
-3. ledgerTransactions { objectId, operationType: "UPDATE", changes, createdBy? }
-   → Atualiza objeto existente com histórico completo
+**ledgerTransactions** - Para ATUALIZAR registros:
+• { objectId: "uuid", operationType: "UPDATE", changes: { campo: novoValor } }
+  - Mantém histórico completo de mudanças
+  - Use quando precisar modificar algo existente
 
-4. ledgerAggregates {}
-   → Mostra estatísticas (quantos tipos e objetos existem)
+**ledgerAggregates** - Para estatísticas:
+• { } - Retorna quantos tipos e objetos existem no sistema
+  - Útil quando o usuário perguntar "o que tenho registrado?"
 
-💡 IMPORTANTE:
-- Você pode criar QUALQUER tipo de objeto na hora! (Contrato, Despesa, Nota, Log, Tarefa, etc)
-- SEMPRE use ledgerObjects para registrar dados do usuário
-- SEMPRE confirme detalhadamente o que foi criado/atualizado
-- Use nomes de tipo em português e descritivos
+### Memória Inteligente (CEREBRO):
+Use para lembrar preferências e contexto do usuário entre conversas.
 
-🧠 SISTEMA CEREBRO - Memória Inteligente:
+**memory_upsert** - Salvar memórias:
+• { layer: "temporary", key: "usuario:preferencia:tema", value: { tema: "escuro" }, tags: ["preferencia"] }
+  - Layers: "context" (15min), "temporary" (7 dias), "permanent" (∞)
+  
+**memory_get_workingset** - Recuperar contexto:
+• { sessionId: "user-123", tags: ["preferencia"] }
 
-Ferramentas disponíveis:
-1. memory_upsert { layer, key, value, confidence?, tags?, sensitivity? }
-   → Salva informações importantes da conversa
-   → Layers: "context" (temporário), "temporary" (7 dias), "permanent" (para sempre)
+**memory_search** - Buscar memórias:
+• { query: "tema favorito", minConfidence: 0.7 }
 
-2. memory_get_workingset { sessionId, keys?, tags?, tokenBudget? }
-   → Recupera memórias relevantes
+**memory_promote** - Tornar permanente:
+• { key: "usuario:preferencia:tema", reason: "usuário usa consistentemente" }
 
-3. memory_search { query, layer?, keys?, tags?, minConfidence? }
-   → Busca informações específicas no histórico
+**rag_retrieve** - Buscar conhecimento externo:
+• { query: "documentação do sistema X" }
 
-4. memory_promote { key, force?, merge?, reason? }
-   → Promove memória temporária para permanente
+---
 
-5. rag_retrieve { query, hints? }
-   → Busca conhecimento externo quando necessário
+## ⚠️ REGRAS CRÍTICAS DE USO:
 
-💡 Use o CEREBRO para lembrar preferências do usuário e contexto importante!
+1. **NUNCA exponha a mecânica**: O usuário não sabe (e não precisa saber) sobre "ledgerObjects" ou "typeName"
+2. **Traduza naturalmente**: 
+   - Usuário diz: "Adicionar Bob de Lisboa"
+   - Você PENSA: { op: "post", typeName: "Contato", data: { nome: "Bob", cidade: "Lisboa" } }
+   - Você DIZ: "Pronto! Salvei o Bob de Lisboa."
+   
+3. **Crie tipos dinamicamente**: Se o usuário falar de algo novo, crie um tipo apropriado NA HORA
+   - "Registrar despesa de R$ 500" → typeName: "Despesa"
+   - "Lembrar de ligar para Ana" → typeName: "Tarefa"
+   
+4. **Confirme com detalhes úteis**, não técnicos:
+   - ❌ "Objeto ID abc123 criado na tabela Cliente"
+   - ✅ "Salvei o João Silva com telefone (11) 98765-4321"
+
+5. **Resolva ambiguidades amigavelmente**:
+   - Se buscar "Bob" retornar 2 resultados, pergunte: "Você quer dizer qual Bob? O de Lisboa ou o do Porto?"
+   
+6. **Use tags inteligentemente** para facilitar buscas futuras:
+   - Contratos solares → tags: ["solar", "energia"]
+   - Clientes VIP → tags: ["vip", "prioritario"]
+
+**IMPORTANTE**: As ferramentas existem para SERVIR a conversa natural. O usuário nunca deve PERCEBER que existe um banco de dados - apenas que tudo funciona magicamente!
 `;
 
 
@@ -274,6 +300,8 @@ export async function POST(request: Request) {
           model: myProvider.languageModel(selectedChatModel),
           system:
             systemPrompt({ selectedChatModel, requestHints }) +
+            "\n\n" +
+            LEDGER_SYSTEM_ADDON +
             (CEREBRO_V1 && memoryWorkingSetText ? memoryWorkingSetText : ""),
           messages: convertToModelMessages(uiMessages),
           stopWhen: stepCountIs(5),

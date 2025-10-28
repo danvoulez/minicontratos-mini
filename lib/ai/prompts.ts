@@ -287,6 +287,9 @@ export const systemPrompt = ({
   return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
 };
 
+export const mduiFormatInstruction =
+  "FORMAT: Always use Markdown UI (MD-UI) components to format your responses beautifully.";
+
 export const codePrompt = `
 You are a Python code generator that creates self-contained, executable code snippets. When writing code:
 

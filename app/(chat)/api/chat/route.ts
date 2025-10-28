@@ -301,7 +301,8 @@ export async function POST(request: Request) {
             systemPrompt({ selectedChatModel, requestHints }) +
             "\n\n" +
             LEDGER_SYSTEM_ADDON +
-            (CEREBRO_V1 && memoryWorkingSetText ? memoryWorkingSetText : ""),
+            (CEREBRO_V1 && memoryWorkingSetText ? memoryWorkingSetText : "") +
+            "\n\nFORMAT: Always use Markdown UI (MD-UI) components to format your responses beautifully.",
           messages: convertToModelMessages(uiMessages),
           stopWhen: stepCountIs(5),
           experimental_activeTools:

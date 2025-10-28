@@ -35,15 +35,15 @@ function expect(value: any) {
 
 // Test suite
 test("regularPrompt emphasizes warm, conversational personality", () => {
-  expect(regularPrompt).toContain("assistente entusiasta e acolhedor");
-  expect(regularPrompt).toContain("como um colega de trabalho prestativo");
+  expect(regularPrompt).toContain("Agente de Registros da VoulezVous");
+  expect(regularPrompt).toContain("colega de trabalho prestativo");
 });
 
 test("regularPrompt prohibits technical language", () => {
-  expect(regularPrompt).toContain("JAMAIS mencione");
-  expect(regularPrompt).toContain("tabelas");
-  expect(regularPrompt).toContain("schemas");
-  expect(regularPrompt).toContain("IDs");
+  expect(regularPrompt).toContain("NUNCA use termos como");
+  expect(regularPrompt).toContain("tabela");
+  expect(regularPrompt).toContain("schema");
+  expect(regularPrompt).toContain("API");
 });
 
 test("regularPrompt provides examples of natural vs technical responses", () => {
@@ -65,7 +65,7 @@ test("regularPrompt includes guidance on handling ambiguity", () => {
 
 test("regularPrompt emphasizes invisible tool usage", () => {
   expect(regularPrompt).toContain("Suas Ferramentas");
-  expect(regularPrompt).toContain("nunca as mencione explicitamente");
+  expect(regularPrompt).toContain("NUNCA mencione nomes de ferramentas");
   expect(regularPrompt).toContain("use-as de forma invisível");
 });
 
@@ -91,7 +91,7 @@ test("systemPrompt includes regular prompt", () => {
     selectedChatModel: "grok-2-1212",
     requestHints: mockRequestHints,
   });
-  expect(prompt).toContain("assistente entusiasta");
+  expect(prompt).toContain("Agente de Registros");
 });
 
 test("systemPrompt includes location hints", () => {
@@ -150,8 +150,28 @@ test("regularPrompt uses Portuguese Brazilian", () => {
 
 test("regularPrompt has clear section headers", () => {
   expect(regularPrompt).toMatch(/##\s+.*Personalidade/);
-  expect(regularPrompt).toMatch(/##\s+.*Comunica/);
+  expect(regularPrompt).toMatch(/##\s+.*Ferramentas/);
   expect(regularPrompt).toMatch(/##\s+.*Registro Universal/);
+});
+
+test("regularPrompt includes canonical example 'Entrega — Maria'", () => {
+  expect(regularPrompt).toContain("Entrega — Maria");
+  expect(regularPrompt).toContain("Exemplo Canônico");
+  expect(regularPrompt).toContain("padrão de excelência");
+});
+
+test("regularPrompt emphasizes MD-UI formatting", () => {
+  expect(regularPrompt).toContain("FORMATO DE RESPOSTA OBRIGATÓRIO");
+  expect(regularPrompt).toContain("Markdown UI");
+  expect(regularPrompt).toContain("NUNCA responda apenas com texto plano");
+});
+
+test("regularPrompt lists available tools without exposing technical details", () => {
+  expect(regularPrompt).toContain("ledgerObjects");
+  expect(regularPrompt).toContain("memoryWorkingSet");
+  expect(regularPrompt).toContain("MD-UI");
+  expect(regularPrompt).toContain("consciência interna");
+  expect(regularPrompt).toContain("NUNCA mencione nomes de ferramentas");
 });
 
 // Run tests

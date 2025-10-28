@@ -20,7 +20,7 @@ import { auth, type UserType } from "@/app/(auth)/auth";
 import type { VisibilityType } from "@/components/visibility-selector";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import type { ChatModel } from "@/lib/ai/models";
-import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
+import { type RequestHints, systemPrompt, mduiFormatInstruction } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
 import { cerebroTools } from "@/lib/ai/tools/cerebro";
 import { createDocument } from "@/lib/ai/tools/create-document";
@@ -302,7 +302,8 @@ export async function POST(request: Request) {
             "\n\n" +
             LEDGER_SYSTEM_ADDON +
             (CEREBRO_V1 && memoryWorkingSetText ? memoryWorkingSetText : "") +
-            "\n\nFORMAT: Always use Markdown UI (MD-UI) components to format your responses beautifully.",
+            "\n\n" +
+            mduiFormatInstruction,
           messages: convertToModelMessages(uiMessages),
           stopWhen: stepCountIs(5),
           experimental_activeTools:

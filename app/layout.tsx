@@ -19,7 +19,7 @@ export const viewport = {
 const geist = localFont({
   src: [
     {
-      path: "../public/fonts/Geist-Variable.woff2",
+      path: "./fonts/Geist-Variable.woff2",
       style: "normal",
     },
   ],
@@ -30,17 +30,17 @@ const geist = localFont({
 const geistMono = localFont({
   src: [
     {
-      path: "../public/fonts/GeistMono-Regular.woff2",
+      path: "./fonts/GeistMono-Regular.woff2",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../public/fonts/GeistMono-Medium.woff2",
+      path: "./fonts/GeistMono-Medium.woff2",
       weight: "500",
       style: "normal",
     },
     {
-      path: "../public/fonts/GeistMono-Bold.woff2",
+      path: "./fonts/GeistMono-Bold.woff2",
       weight: "700",
       style: "normal",
     },

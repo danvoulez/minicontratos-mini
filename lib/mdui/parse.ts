@@ -83,7 +83,9 @@ export function parseMDUI(content: string): MDUIToken[] {
           currentIndex,
           currentIndex + inlineMatch.index
         );
-        tokens.push({ type: "text", content: textBefore });
+        if (textBefore.trim()) {
+          tokens.push({ type: "markdown", content: textBefore });
+        }
       }
 
       const [fullMatch, componentType, propsStr] = inlineMatch;
@@ -118,7 +120,9 @@ export function parseMDUI(content: string): MDUIToken[] {
           currentIndex,
           currentIndex + actionMatch.index
         );
-        tokens.push({ type: "text", content: textBefore });
+        if (textBefore.trim()) {
+          tokens.push({ type: "markdown", content: textBefore });
+        }
       }
 
       const [fullMatch, label, action, payloadStr] = actionMatch;
@@ -143,7 +147,7 @@ export function parseMDUI(content: string): MDUIToken[] {
 
     // No special syntax found, consume the rest as markdown/text
     const remainingText = content.slice(currentIndex);
-    if (remainingText) {
+    if (remainingText.trim()) {
       tokens.push({ type: "markdown", content: remainingText });
     }
     break;

@@ -78,6 +78,8 @@ export function parseMDUI(content: string): MDUIToken[] {
 
     if (inlineMatch && inlineMatch.index !== undefined) {
       // Add any text before the match
+      // Note: We trim whitespace to avoid rendering gaps between MD-UI components.
+      // This is intentional for LLM-generated content where whitespace is less critical.
       if (inlineMatch.index > 0) {
         const textBefore = content.slice(
           currentIndex,

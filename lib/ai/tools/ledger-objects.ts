@@ -8,11 +8,15 @@ export const ledgerObjects = ({ origin }: { origin: string }) =>
     inputSchema: z.object({
       op: z
         .enum(["get", "post"])
-        .describe("Operação: 'get' para consultar registros existentes, 'post' para salvar novo registro"),
+        .describe(
+          "Operação: 'get' para consultar registros existentes, 'post' para salvar novo registro"
+        ),
       typeName: z
         .string()
         .optional()
-        .describe("Nome descritivo do tipo de registro em português (ex: 'Cliente', 'Projeto', 'Contrato', 'Despesa'). Para POST é obrigatório. Para GET, se omitido retorna TODOS os registros"),
+        .describe(
+          "Nome descritivo do tipo de registro em português (ex: 'Cliente', 'Projeto', 'Contrato', 'Despesa'). Para POST é obrigatório. Para GET, se omitido retorna TODOS os registros"
+        ),
       data: z
         .record(z.any())
         .optional()
@@ -22,12 +26,16 @@ export const ledgerObjects = ({ origin }: { origin: string }) =>
       metadata: z
         .record(z.any())
         .optional()
-        .describe("Metadados opcionais. Use 'tags' aqui para facilitar buscas futuras. Ex: { tags: ['vip', 'solar'] }"),
+        .describe(
+          "Metadados opcionais. Use 'tags' aqui para facilitar buscas futuras. Ex: { tags: ['vip', 'solar'] }"
+        ),
     }),
     execute: async (input) => {
       const base = origin;
       if (input.op === "get") {
-        const qs = input.typeName ? `?type=${encodeURIComponent(input.typeName)}` : "";
+        const qs = input.typeName
+          ? `?type=${encodeURIComponent(input.typeName)}`
+          : "";
         const r = await fetch(`${base}/api/ledger/objects${qs}`);
         if (!r.ok) throw new Error(`ledgerObjects:get failed: ${r.status}`);
         return await r.json();

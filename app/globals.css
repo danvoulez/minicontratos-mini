@@ -47,6 +47,14 @@
   /* border radius unit */
   --radius: 0.5rem;
   --sidebar: hsl(0 0% 98%);
+
+  /* MD-UI tokens */
+  --mdui-bg: hsl(0 0% 100%);
+  --mdui-surface: hsl(240 5.9% 96%);
+  --mdui-brand: hsl(158 64% 52%);
+  --mdui-radius: 12px;
+  --mdui-gap: 14px;
+  --mdui-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 /* define design tokens (dark mode) */
@@ -84,6 +92,14 @@
   --sidebar-border: hsl(240 3.7% 15.9%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
   --sidebar: hsl(240 5.9% 10%);
+
+  /* MD-UI tokens (dark mode) */
+  --mdui-bg: hsl(240 10% 3.9%);
+  --mdui-surface: hsl(240 6% 8%);
+  --mdui-brand: hsl(158 64% 52%);
+  --mdui-radius: 12px;
+  --mdui-gap: 14px;
+  --mdui-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 /* define theme */

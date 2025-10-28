@@ -145,4 +145,29 @@ export const TEST_PROMPTS: Record<string, ModelMessage> = {
       },
     ],
   },
+  // Ledger test prompts
+  USER_ADD_CONTACT: {
+    role: "user",
+    content: [
+      { type: "text", text: "Adicionar Bob de Lisboa" },
+    ],
+  },
+  USER_ADD_CLIENT_WITH_TAG: {
+    role: "user",
+    content: [
+      { type: "text", text: "Adicionar cliente João Silva, tag solar" },
+    ],
+  },
+  USER_SHOW_SOLAR_RECORDS: {
+    role: "user",
+    content: [
+      { type: "text", text: "Mostrar todos com tag solar" },
+    ],
+  },
+  USER_AMBIGUOUS_BOB: {
+    role: "user",
+    content: [
+      { type: "text", text: "Adicionar Bob" },
+    ],
+  },
 };

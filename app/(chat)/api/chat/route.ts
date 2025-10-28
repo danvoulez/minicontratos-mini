@@ -22,13 +22,13 @@ import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import type { ChatModel } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
+import { cerebroTools } from "@/lib/ai/tools/cerebro";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { ledgerAggregates } from "@/lib/ai/tools/ledger-aggregates";
 import { ledgerObjects } from "@/lib/ai/tools/ledger-objects";
 import { ledgerTransactions } from "@/lib/ai/tools/ledger-transactions";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
-import { cerebroTools } from "@/lib/ai/tools/cerebro";
 
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { isProductionEnvironment } from "@/lib/constants";
@@ -126,7 +126,6 @@ Use para lembrar preferências e contexto do usuário entre conversas.
 
 **IMPORTANTE**: As ferramentas existem para SERVIR a conversa natural. O usuário nunca deve PERCEBER que existe um banco de dados - apenas que tudo funciona magicamente!
 `;
-
 
 export const maxDuration = 60;
 

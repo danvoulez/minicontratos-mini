@@ -77,7 +77,7 @@ test("regularPrompt includes interaction examples", () => {
 
 test("regularPrompt emphasizes being a problem solver", () => {
   expect(regularPrompt).toContain("solucionador");
-  expect(regularPrompt).toContain("NUNCA diga \"não dá\"");
+  expect(regularPrompt).toContain('NUNCA diga "não dá"');
 });
 
 test("systemPrompt includes regular prompt", () => {
@@ -169,9 +169,10 @@ for (const t of tests) {
   }
 }
 
-console.log(`\n📊 Results: ${passed} passed, ${failed} failed, ${tests.length} total\n`);
+console.log(
+  `\n📊 Results: ${passed} passed, ${failed} failed, ${tests.length} total\n`
+);
 
 if (failed > 0) {
   process.exit(1);
 }
-

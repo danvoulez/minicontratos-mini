@@ -73,29 +73,25 @@ export async function POST(request: Request) {
 
     // POST success log
     const __logTypeId = await ensureLogTypeId(db);
-    await db
-      .insert(ledgerObject)
-      .values({
-        typeId: __logTypeId,
-        data: {
-          level: "info",
-          message: "ledger.transactions.post",
-          context: { objectId, operationType, version: updated?.version },
-        },
-      });
+    await db.insert(ledgerObject).values({
+      typeId: __logTypeId,
+      data: {
+        level: "info",
+        message: "ledger.transactions.post",
+        context: { objectId, operationType, version: updated?.version },
+      },
+    });
     return NextResponse.json(updated, { status: 200 });
   } catch (e: any) {
     const __logTypeId = await ensureLogTypeId(db);
-    await db
-      .insert(ledgerObject)
-      .values({
-        typeId: __logTypeId,
-        data: {
-          level: "error",
-          message: "ledger.transactions.post.error",
-          context: { objectId, operationType, error: String(e?.message || e) },
-        },
-      });
+    await db.insert(ledgerObject).values({
+      typeId: __logTypeId,
+      data: {
+        level: "error",
+        message: "ledger.transactions.post.error",
+        context: { objectId, operationType, error: String(e?.message || e) },
+      },
+    });
     return NextResponse.json(
       { error: "record_failed", message: e?.message || "Unknown error" },
       { status: 500 }
